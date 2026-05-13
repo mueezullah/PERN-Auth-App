@@ -87,6 +87,18 @@ const Campaign = {
     `;
     const result = await pool.query(query, [title, description, goalAmount, deadline, mediaUrl, id]);
     return result.rows[0];
+  },
+
+  updateExpiredCampaigns: async () => {
+    const query = `
+      UPDATE campaigns
+      SET status = 'ended',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE status = 'active' AND deadline < CURRENT_TIMESTAMP
+      RETURNING *;
+    `;
+    const result = await pool.query(query);
+    return result.rows;
   }
 };
 
