@@ -14,6 +14,9 @@ const getActiveCampaigns = async (queryPage, queryLimit) => {
     return { success: false, status: 400, message: "Invalid pagination parameters" };
   }
 
+  // Update expired campaigns to 'ended' status before fetching
+  await Campaign.updateExpiredCampaigns();
+
   const offset = (page - 1) * limit;
   const { campaigns, total } = await Campaign.findAllActive(limit, offset);
   
@@ -28,6 +31,9 @@ const getActiveCampaigns = async (queryPage, queryLimit) => {
 };
 
 const getCampaignById = async (id) => {
+  // Update expired campaigns before fetching
+  await Campaign.updateExpiredCampaigns();
+  
   const campaign = await Campaign.findById(id);
   if (!campaign) {
     return { success: false, status: 404, message: "Campaign not found" };
