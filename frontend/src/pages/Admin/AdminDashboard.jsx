@@ -10,7 +10,9 @@ import {
   ChevronRight,
   Menu,
   X,
+  Home,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Avatar background color based on index
 const avatarColors = [
@@ -200,9 +202,13 @@ const AccordionItem = ({
 
 // --- MAIN ADMIN DASHBOARD COMPONENT ---
 const AdminDashboard = ({ setIsAuthenticated }) => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [campaignsError, setCampaignsError] = useState(null);
   const [activeView, setActiveView] = useState("dashboard");
   const [selectedRole, setSelectedRole] = useState("user");
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
@@ -214,6 +220,11 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("role");
     setIsAuthenticated(false);
+  };
+
+  // Handle Feed navigation
+  const handleFeedClick = () => {
+    navigate("/feed");
   };
 
   // Handle Role Change functionality
@@ -255,6 +266,31 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
       }
     };
     fetchUsers();
+  }, []);
+
+  // Fetch campaigns from backend
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        setCampaignsLoading(true);
+        const response = await fetch(
+          `${import.meta.env.VITE_BASE_API_URL}/campaigns?page=1&limit=100`,
+        );
+        const data = await response.json();
+        if (data.success) {
+          setCampaigns(data.data.campaigns || []);
+        } else {
+          setCampaignsError(data.message || "Failed to fetch campaigns");
+        }
+      } catch (err) {
+        setCampaignsError("Failed to connect to server");
+        console.error(err);
+      } finally {
+        setCampaignsLoading(false);
+      }
+    };
+
+    fetchCampaigns();
   }, []);
 
   const roleOptions = [
@@ -364,10 +400,17 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                       : "Settings"}
               </h1>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
               <span className="mr-4 text-sm text-gray-600">
                 Admin, {loggedInUser}
               </span>
+              <button
+                onClick={handleFeedClick}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                <span>Feed</span>
+              </button>
               <button
                 onClick={handleLogout}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
@@ -391,14 +434,20 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                 colorClass="bg-blue-500"
               />
               <StatsCard
-                title="Total Campaigns"
-                value="24"
+                title="Total Campaigns Raised"
+                value={campaigns.length.toLocaleString()}
                 icon={Megaphone}
                 colorClass="bg-purple-500"
               />
               <StatsCard
                 title="Active Campaigns"
-                value="12"
+                value={campaigns
+                  .filter((c) => {
+                    const now = new Date();
+                    const deadline = new Date(c.deadline);
+                    return c.status === "active" && deadline > now;
+                  })
+                  .length.toLocaleString()}
                 icon={Settings}
                 colorClass="bg-green-500"
               />
@@ -587,11 +636,140 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
             </div>
           )}
 
-          {/* ===== PLACEHOLDER VIEWS ===== */}
+          {/* ===== CAMPAIGNS VIEW ===== */}
           {activeView === "campaigns" && (
-            <div className="text-center py-20 text-gray-400">
-              <Megaphone className="h-12 w-12 mx-auto mb-4" />
-              <p className="text-lg">Campaigns section coming soon.</p>
+            <div>
+              <div className="bg-white shadow rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Title
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Creator
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Goal Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Raised
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Deadline
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {campaignsLoading ? (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="px-6 py-10 text-center text-gray-500"
+                          >
+                            <div className="flex justify-center items-center">
+                              <svg
+                                className="animate-spin h-5 w-5 mr-3 text-indigo-600"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="none"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                />
+                              </svg>
+                              Loading campaigns...
+                            </div>
+                          </td>
+                        </tr>
+                      ) : campaignsError ? (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="px-6 py-10 text-center text-red-500"
+                          >
+                            {campaignsError}
+                          </td>
+                        </tr>
+                      ) : campaigns.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="px-6 py-10 text-center text-gray-400 text-sm"
+                          >
+                            No campaigns found.
+                          </td>
+                        </tr>
+                      ) : (
+                        campaigns.map((campaign) => (
+                          <tr
+                            key={campaign.id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">
+                                {campaign.title}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {campaign.owner_name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              $
+                              {parseFloat(
+                                campaign.goal_amount,
+                              ).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              $
+                              {parseFloat(
+                                campaign.current_amount,
+                              ).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(campaign.deadline).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  campaign.status === "active"
+                                    ? "bg-green-100 text-green-800"
+                                    : campaign.status === "closed"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                {campaign.status.charAt(0).toUpperCase() +
+                                  campaign.status.slice(1)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 sm:px-6">
+                  <div className="text-sm text-gray-700">
+                    Total{" "}
+                    <span className="font-medium">{campaigns.length}</span>{" "}
+                    campaigns
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           {activeView === "settings" && (
