@@ -1,0 +1,35 @@
+services:
+  # 1. Backend Service (Express)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pern_backend
+    restart: always
+    ports:
+      - "8080:8080" # Maps host port 8080 to container port 8080
+    env_file:
+      - ./backend/.env
+    environment:
+      - PORT=8080
+      - NODE_ENV=development
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  # 2. Frontend Service (Vite Development Server)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pern_frontend
+    restart: always
+    ports:
+      - "5173:5173" # Maps host port 5173 to Vite dev server port 5173
+    env_file:
+      - ./frontend/.env
+    volumes:
+      - ./frontend:/app # Mount code for instant hot-reloading (HMR)
+      - /app/node_modules # Avoid overriding container modules with host modules
+    depends_on:
+      - backend
