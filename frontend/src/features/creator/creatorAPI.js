@@ -8,8 +8,8 @@ const getAuthHeaders = () => {
   };
 };
 
-export const fetchCampaigns = async (page = 1, limit = 10) => {
-  const res = await fetch(`${API_BASE}?page=${page}&limit=${limit}`);
+export const fetchCampaigns = async (page = 1, limit = 10, status = "all") => {
+  const res = await fetch(`${API_BASE}?page=${page}&limit=${limit}&status=${status}`);
   const data = await res.json();
   if (!res.ok || !data.success) {
     throw new Error(data.message || "Failed to fetch campaigns");
