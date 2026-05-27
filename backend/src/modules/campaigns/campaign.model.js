@@ -42,19 +42,31 @@ const Campaign = {
     return result.rows[0];
   },
   
-  findAllActive: async (limit, offset) => {
-    const query = `
+  findAllActive: async (limit, offset, status = 'active') => {
+    let query = `
       SELECT c.*, u.name as owner_name 
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
-      WHERE c.status = 'active'
-      ORDER BY c.created_at DESC
-      LIMIT $1 OFFSET $2;
     `;
-    const result = await pool.query(query, [limit, offset]);
-    
-    const countQuery = `SELECT COUNT(*) FROM campaigns WHERE status = 'active'`;
-    const countResult = await pool.query(countQuery);
+    let countQuery = `SELECT COUNT(*) FROM campaigns`;
+    const queryParams = [];
+    const countParams = [];
+
+    if (status && status !== 'all') {
+      query += ` WHERE c.status = $1`;
+      countQuery += ` WHERE status = $1`;
+      queryParams.push(status);
+      countParams.push(status);
+      
+      query += ` ORDER BY c.created_at DESC LIMIT $2 OFFSET $3;`;
+      queryParams.push(limit, offset);
+    } else {
+      query += ` ORDER BY c.created_at DESC LIMIT $1 OFFSET $2;`;
+      queryParams.push(limit, offset);
+    }
+
+    const result = await pool.query(query, queryParams);
+    const countResult = await pool.query(countQuery, countParams);
     
     return {
       campaigns: result.rows,

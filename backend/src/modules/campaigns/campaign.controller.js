@@ -23,8 +23,8 @@ const create = async (req, res) => {
 
 const listActive = async (req, res) => {
   try {
-    const { page, limit } = req.query;
-    const result = await campaignService.getActiveCampaigns(page, limit);
+    const { page, limit, status } = req.query;
+    const result = await campaignService.getActiveCampaigns(page, limit, status);
     if (!result.success) {
       return res
         .status(result.status)

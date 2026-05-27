@@ -7,7 +7,7 @@ const createCampaign = async (userId, data) => {
   return { success: true, status: 201, data: newCampaign };
 };
 
-const getActiveCampaigns = async (queryPage, queryLimit) => {
+const getActiveCampaigns = async (queryPage, queryLimit, status) => {
   const { page, limit } = parsePaginationParams(queryPage, queryLimit);
   
   if (page < 1 || limit < 1) {
@@ -18,7 +18,7 @@ const getActiveCampaigns = async (queryPage, queryLimit) => {
   await Campaign.updateExpiredCampaigns();
 
   const offset = (page - 1) * limit;
-  const { campaigns, total } = await Campaign.findAllActive(limit, offset);
+  const { campaigns, total } = await Campaign.findAllActive(limit, offset, status);
   
   return { 
     success: true, 
