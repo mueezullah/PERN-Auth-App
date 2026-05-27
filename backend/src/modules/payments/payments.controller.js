@@ -7,13 +7,31 @@ const createDonationIntent = async (req, res) => {
         // User ID comes from the JWT token via auth middleware
         const userId  = req.user.id;  
 
-        // Fetch campaign to check if the user is trying to donate to their own campaign
-        const campaignQuery = await pool.query('SELECT user_id FROM campaigns WHERE id = $1', [campaignId]);
+        // Fetch campaign to check if the user is trying to donate to their own campaign and check remaining goal
+        const campaignQuery = await pool.query(
+            'SELECT user_id, goal_amount, current_amount, status FROM campaigns WHERE id = $1', 
+            [campaignId]
+        );
         if (campaignQuery.rows.length === 0) {
             return res.status(404).json({ message: "Campaign not found" });
         }
-        if (campaignQuery.rows[0].user_id === userId) {
+        
+        const campaign = campaignQuery.rows[0];
+        if (campaign.user_id === userId) {
             return res.status(400).json({ message: "You cannot donate to your own campaign" });
+        }
+        if (campaign.status !== 'active') {
+            return res.status(400).json({ message: "This campaign is no longer active" });
+        }
+
+        const goalAmount = parseFloat(campaign.goal_amount);
+        const currentAmount = parseFloat(campaign.current_amount);
+        const remainingAmount = goalAmount - currentAmount;
+
+        if (amount > remainingAmount) {
+            return res.status(400).json({ 
+                message: `You cannot fund more than the required amount. Remaining required amount is $${remainingAmount.toFixed(2)}.` 
+            });
         }
 
         // 1. Create a Payment Intent on Stripe
@@ -90,8 +108,16 @@ const confirmDonation = async (req, res) => {
             );
             
             // Add the money to the campaign's raised amount!
+            // If the goal is reached, automatically mark the campaign status as 'completed'.
             await client.query(
-                `UPDATE campaigns SET current_amount = current_amount + $1 WHERE id = $2`, 
+                `UPDATE campaigns 
+                 SET current_amount = current_amount + $1,
+                     status = CASE 
+                         WHEN current_amount + $1 >= goal_amount THEN 'completed' 
+                         ELSE status 
+                     END,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $2`, 
                 [amount, campaignId]
             );
 
