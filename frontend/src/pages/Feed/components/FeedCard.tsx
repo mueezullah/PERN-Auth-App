@@ -33,6 +33,7 @@ interface FeedCardProps {
     goal?: number;
   };
   deadline?: string;
+  campaignStatus?: string;
 }
 
 export function FeedCard({
@@ -42,6 +43,7 @@ export function FeedCard({
   content,
   stats,
   deadline,
+  campaignStatus,
 }: FeedCardProps) {
   const [isDonationOpen, setIsDonationOpen] = useState(false);
   const navigate = useNavigate();
@@ -64,6 +66,8 @@ export function FeedCard({
       )
     : null;
   const isCampaignEnded = deadline ? new Date(deadline) < new Date() : false;
+  const isCampaignCompleted = campaignStatus === 'completed' || (stats.raised !== undefined && stats.goal !== undefined && stats.raised >= stats.goal);
+  const isDonateDisabled = isCampaignEnded || isCampaignCompleted;
 
   return (
     <article className="bg-white rounded-3xl shadow-sm border mb-8 border-slate-200/60 p-5 sm:p-6 transition-all hover:shadow-md">
@@ -183,17 +187,24 @@ export function FeedCard({
 
         {isCampaign &&
           String(user.id) !== String(localStorage.getItem("userId")) && (
-            <button
-              onClick={() => !isCampaignEnded && setIsDonationOpen(true)}
-              disabled={isCampaignEnded}
-              className={`px-5 py-2 sm:px-6 sm:py-2.5 font-bold text-[13px] sm:text-[14px] rounded-full active:scale-95 transition-all shadow-sm ${
-                isCampaignEnded
-                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                  : "bg-slate-900 text-white hover:bg-slate-800"
-              }`}
-            >
-              {isCampaignEnded ? "Project Ended" : "Donate Now"}
-            </button>
+            isDonateDisabled ? (
+              <span
+                className={`px-5 py-2 sm:px-6 sm:py-2.5 font-extrabold text-[13px] sm:text-[14px] rounded-full border select-none inline-flex items-center justify-center ${
+                  isCampaignCompleted
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-rose-50 text-rose-700 border-rose-200"
+                }`}
+              >
+                {isCampaignCompleted ? "complete" : "InComplete"}
+              </span>
+            ) : (
+              <button
+                onClick={() => setIsDonationOpen(true)}
+                className="px-5 py-2 sm:px-6 sm:py-2.5 bg-slate-900 text-white hover:bg-slate-800 font-bold text-[13px] sm:text-[14px] rounded-full active:scale-95 transition-all shadow-sm"
+              >
+                Donate Now
+              </button>
+            )
           )}
 
         {isCampaign &&
@@ -212,6 +223,8 @@ export function FeedCard({
         onClose={() => setIsDonationOpen(false)}
         // Feed passes 'id' as 'campaign-1', so we must extract only the number!
         campaignId={parseInt(id.replace(/\D/g, ""))}
+        goal={stats.goal}
+        raised={stats.raised}
       />
     </article>
   );

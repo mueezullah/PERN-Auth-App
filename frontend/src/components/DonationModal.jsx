@@ -9,7 +9,7 @@ import { handleError } from "../utils";
 // NEVER put your Secret Key here! Only the Public/Publishable one.
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const DonationModal = ({ isOpen, onClose, campaignId }) => {
+const DonationModal = ({ isOpen, onClose, campaignId, goal, raised }) => {
   // Stage 1: Ask for amount
   // Stage 2: Show Credit Card form
   const [stage, setStage] = useState(1);
@@ -18,12 +18,20 @@ const DonationModal = ({ isOpen, onClose, campaignId }) => {
   const [clientSecret, setClientSecret] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Calculate the remaining amount needed to reach the goal
+  const remainingAmount = (goal && raised != null) ? Math.max(0, parseFloat(goal) - parseFloat(raised)) : null;
+
   if (!isOpen) return null;
 
   const handleContinue = async () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) {
       handleError("Please enter a valid amount greater than 0.");
+      return;
+    }
+
+    if (remainingAmount !== null && numAmount > remainingAmount) {
+      handleError(`You cannot fund more than the required amount. Maximum allowed: $${remainingAmount.toFixed(2)}`);
       return;
     }
 
@@ -118,16 +126,29 @@ const DonationModal = ({ isOpen, onClose, campaignId }) => {
                   type="number"
                   min="1"
                   step="1"
+                  max={remainingAmount !== null ? remainingAmount : undefined}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="50"
+                  placeholder={remainingAmount !== null ? String(Math.min(50, remainingAmount)) : "50"}
                   className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium"
                 />
               </div>
 
+              {remainingAmount !== null && (
+                <p className="text-sm text-gray-500">
+                  Remaining amount needed: <span className="font-semibold text-gray-700">${remainingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </p>
+              )}
+
+              {amount && remainingAmount !== null && parseFloat(amount) > remainingAmount && (
+                <p className="text-sm text-red-500 font-medium">
+                  Amount exceeds the remaining required funding.
+                </p>
+              )}
+
               <button
                 onClick={handleContinue}
-                disabled={isLoading || !amount || parseFloat(amount) <= 0}
+                disabled={isLoading || !amount || parseFloat(amount) <= 0 || (remainingAmount !== null && parseFloat(amount) > remainingAmount)}
                 className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex justify-center items-center disabled:bg-blue-300 disabled:cursor-not-allowed"
               >
                 {isLoading ? "Preparing..." : "Continue to Payment"}

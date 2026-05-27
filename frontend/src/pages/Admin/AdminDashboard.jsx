@@ -274,7 +274,7 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
       try {
         setCampaignsLoading(true);
         const response = await fetch(
-          `${import.meta.env.VITE_BASE_API_URL}/campaigns?page=1&limit=100`,
+          `${import.meta.env.VITE_BASE_API_URL}/campaigns?page=1&limit=100&status=all`,
         );
         const data = await response.json();
         if (data.success) {
@@ -747,9 +747,11 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                   campaign.status === "active"
                                     ? "bg-green-100 text-green-800"
-                                    : campaign.status === "closed"
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-gray-100 text-gray-800"
+                                    : campaign.status === "completed"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : campaign.status === "closed"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {campaign.status.charAt(0).toUpperCase() +

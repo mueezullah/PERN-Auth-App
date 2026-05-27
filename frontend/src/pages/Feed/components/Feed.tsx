@@ -14,7 +14,7 @@ export function Feed() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
-  const { campaigns, pagination, loading, error } = useCampaigns(page, 10);
+  const { campaigns, pagination, loading, error } = useCampaigns(page, 10, "all");
 
   const { posts, loading: postsLoading, error: postsError, refetch: refetchPosts, prependPost } = usePosts(page, 10);
 
@@ -76,6 +76,7 @@ export function Feed() {
       goal: parseFloat(campaign.goal_amount) || 0,
     },
     deadline: campaign.deadline,
+    campaignStatus: campaign.status,
   });
 
   const mapThreadToPost = (thread: any) => ({
@@ -130,7 +131,7 @@ export function Feed() {
               className="flex items-center space-x-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors"
             >
               <Edit3 className="w-4 h-4" />
-              <span className="text-[13px] font-semibold">Thread</span>
+              <span className="text-[13px] font-semibold">Post Something</span>
             </button>
 
             {/* Campaign button — role-aware */}
@@ -139,7 +140,7 @@ export function Feed() {
               className="flex items-center space-x-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors"
             >
               <Megaphone className="w-4 h-4" />
-              <span className="text-[13px] font-semibold">Campaign</span>
+              <span className="text-[13px] font-semibold">Raise Campaign</span>
             </button>
           </div>
 
