@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # 1. Backend Service (Express)
   backend:
@@ -17,7 +19,7 @@ services:
       - ./backend:/app
       - /app/node_modules
 
-  # 2. Frontend Service (Vite Development Server)
+  # 2. Frontend Service (React / Vite + Nginx)
   frontend:
     build:
       context: ./frontend
@@ -25,11 +27,6 @@ services:
     container_name: pern_frontend
     restart: always
     ports:
-      - "5173:5173" # Maps host port 5173 to Vite dev server port 5173
-    env_file:
-      - ./frontend/.env
-    volumes:
-      - ./frontend:/app # Mount code for instant hot-reloading (HMR)
-      - /app/node_modules # Avoid overriding container modules with host modules
+      - "80:80" # Serves the production build via Nginx on port 80
     depends_on:
       - backend
