@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // Route Guards
@@ -22,17 +22,9 @@ import KYCVerification from "../pages/KYC/KYCVerification";
 
 const AppRoutes = ({ isAuthenticated, setIsAuthenticated, isLoading }) => {
   
-  // Sync auth state with localStorage
-  const [role, setRole] = useState(null);
-  const [token, setToken] = useState(null);
-
-  useEffect(() => {
-    const storedRole = localStorage.getItem("role");
-    const storedToken = localStorage.getItem("token");
-
-    if (storedRole !== role) setRole(storedRole);
-    if (storedToken !== token) setToken(storedToken);
-  }, [isAuthenticated, role, token]);
+  // Get auth details directly from localStorage
+  const role = localStorage.getItem("role");
+  const token = localStorage.getItem("token");
 
   // isAuthSync ensures both state and token exist
   const isAuthSync = isAuthenticated && !!token;
