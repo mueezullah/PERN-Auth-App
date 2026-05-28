@@ -16,7 +16,7 @@ export function Feed() {
   const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
   const { campaigns, pagination, loading, error } = useCampaigns(page, 10, "all");
 
-  const { posts, loading: postsLoading, error: postsError, refetch: refetchPosts, prependPost } = usePosts(page, 10);
+  const { posts, loading: postsLoading, error: postsError, prependPost } = usePosts(page, 10);
 
   const role = localStorage.getItem("role");
 

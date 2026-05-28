@@ -56,16 +56,18 @@ export function FeedCard({
     ? Math.min((stats.raised! / stats.goal!) * 100, 100)
     : 0;
 
+  const [now] = useState(() => new Date());
+
   // Calculate days remaining until deadline
   const daysLeft = deadline
     ? Math.max(
         0,
         Math.ceil(
-          (new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+          (new Date(deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
         ),
       )
     : null;
-  const isCampaignEnded = deadline ? new Date(deadline) < new Date() : false;
+  const isCampaignEnded = deadline ? new Date(deadline) < now : false;
   const isCampaignCompleted = campaignStatus === 'completed' || (stats.raised !== undefined && stats.goal !== undefined && stats.raised >= stats.goal);
   const isDonateDisabled = isCampaignEnded || isCampaignCompleted;
 
