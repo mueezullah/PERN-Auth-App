@@ -71,4 +71,33 @@ const update = async (req, res) => {
   }
 };
 
-module.exports = { create, listActive, getOne, update };
+const deleteCampaign = async (req, res) => {
+  try {
+    const result = await campaignService.deleteCampaign(
+      req.params.id,
+      req.user.id
+    );
+    if (!result.success) {
+      return res
+        .status(result.status)
+        .json({ success: false, message: result.message });
+    }
+    res.status(result.status).json({ 
+      success: true, 
+      message: "Campaign deleted successfully",
+      data: result.data,
+      refunds: result.refunds
+    });
+  } catch (error) {
+    console.error("Delete campaign error:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+module.exports = {
+  create,
+  listActive,
+  getOne,
+  update,
+  deleteCampaign
+};
