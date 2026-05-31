@@ -126,6 +126,7 @@ export function FeedCard({
               handleError(result.message || "Failed to delete.");
             }
           } catch (error) {
+            console.error("Delete action failed:", error);
             handleError("Network error occurred while deleting.");
           }
         }
