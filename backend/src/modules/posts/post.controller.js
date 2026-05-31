@@ -68,14 +68,27 @@ const deletePost = async (req, res, next) => {
     const postId = parseInt(req.params.id, 10);
     const userId = req.user.id;
 
-    const deletedPost = await Post.delete(postId, userId);
+    // 1. Fetch post by ID
+    const post = await Post.findById(postId);
 
-    if (!deletedPost) {
+    // 2. Check if post exists
+    if (!post) {
       return res.status(404).json({ 
         success: false,
-        message: "Post not found or you are not authorized to delete it" 
+        message: "Post not found" 
       });
     }
+
+    // 3. Verify user ownership of the post
+    if (post.user_id !== userId) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Forbidden: You do not own this post" 
+      });
+    }
+
+    // 4. Delete the post
+    const deletedPost = await Post.delete(postId);
 
     res.status(200).json({
       success: true,
@@ -87,9 +100,35 @@ const deletePost = async (req, res, next) => {
   }
 };
 
+const updatePost = async (req, res, next) => {
+  try {
+    const postId = parseInt(req.params.id, 10);
+    const userId = req.user.id;
+    const { content, mediaUrl } = req.body;
+
+    const updatedPost = await Post.update(postId, userId, content, mediaUrl);
+
+    if (!updatedPost) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found or you are not authorized to edit it"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Post updated successfully",
+      data: updatedPost
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createPost,
   getAllPosts,
   getUserPosts,
-  deletePost
+  deletePost,
+  updatePost
 };

@@ -13,6 +13,7 @@ router.get("/user/:userId", postController.getUserPosts);
 
 // Protected routes (require user to be logged in)
 router.post("/", ensureAuthenticated, postController.createPost);
+router.put("/:id", ensureAuthenticated, postController.updatePost);
 router.delete("/:id", ensureAuthenticated, postController.deletePost);
 
 module.exports = router;
