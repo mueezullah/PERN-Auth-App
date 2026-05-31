@@ -6,7 +6,15 @@ import {
   MoreHorizontal,
   Bookmark,
   Clock,
+  Trash2,
+  Edit2,
+  Pin,
+  AlertTriangle,
+  UserPlus,
+  EyeOff,
 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { handleSuccess, handleError } from "../../../utils";
 import { ImageWithFallback } from "./ImageFallback/ImageWithFallback";
 import DonationModal from "../../../components/DonationModal";
 import { useNavigate } from "react-router-dom";
@@ -45,8 +53,14 @@ export function FeedCard({
   deadline,
   campaignStatus,
 }: FeedCardProps) {
+  const currentUserId = localStorage.getItem("userId");
+  const isOwner = !!(currentUserId && user?.id && String(user.id) === String(currentUserId));
+
   const [isDonationOpen, setIsDonationOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isCampaign =
     type === "campaign" &&
@@ -58,18 +72,94 @@ export function FeedCard({
 
   const [now] = useState(() => new Date());
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    if (isMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
   // Calculate days remaining until deadline
   const daysLeft = deadline
     ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-        ),
-      )
+      0,
+      Math.ceil(
+        (new Date(deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    )
     : null;
   const isCampaignEnded = deadline ? new Date(deadline) < now : false;
   const isCampaignCompleted = campaignStatus === 'completed' || (stats.raised !== undefined && stats.goal !== undefined && stats.raised >= stats.goal);
   const isDonateDisabled = isCampaignEnded || isCampaignCompleted;
+
+  const handleAction = async (actionType: string) => {
+    setIsMenuOpen(false); // Close menu instantly
+    switch (actionType) {
+      case "delete":
+        if (window.confirm("Are you sure you want to delete this?")) {
+          try {
+            // Determine if it is a campaign or a post
+            const isCamp = type === "campaign";
+            const deleteEndpoint = isCamp
+              ? `${import.meta.env.VITE_BASE_API_URL}/campaigns/${id.replace("campaign-", "")}`
+              : `${import.meta.env.VITE_BASE_API_URL}/posts/${id.replace("post-", "")}`;
+
+            const response = await fetch(deleteEndpoint, {
+              method: "DELETE",
+              headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+              }
+            });
+            const result = await response.json();
+            if (result.success) {
+              handleSuccess(`${isCamp ? "Campaign" : "Post"} deleted successfully!`);
+              // Refresh list or trigger page reload to reflect changes
+              window.location.reload();
+            } else {
+              handleError(result.message || "Failed to delete.");
+            }
+          } catch (error) {
+            handleError("Network error occurred while deleting.");
+          }
+        }
+        break;
+
+      case "edit":
+        handleSuccess("Edit modal or form opened!");
+        // TODO: Open an edit modal or redirect to edit page
+        break;
+
+      case "pin":
+        handleSuccess("Post successfully pinned to your profile!");
+        // TODO: Call API endpoint POST /api/users/pin with post ID
+        break;
+
+      case "report":
+        handleSuccess("Thank you! This content has been reported for review.");
+        // TODO: Call API endpoint POST /api/reports with content details
+        break;
+
+      case "follow":
+        handleSuccess(`You are now following ${user.name}!`);
+        // TODO: Call API endpoint POST /api/users/follow with user.id
+        break;
+
+      case "not_interested":
+        handleSuccess("Content hidden. We will adjust your recommendation feed.");
+        // TODO: Temporarily hide this card in local state or update feed model
+        break;
+
+      default:
+        break;
+    }
+  };
 
   return (
     <article className="bg-white rounded-3xl shadow-sm border mb-8 border-slate-200/60 p-5 sm:p-6 transition-all hover:shadow-md">
@@ -103,9 +193,77 @@ export function FeedCard({
             </p>
           </div>
         </div>
-        <button className="p-2 text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-50 transition-colors">
-          <MoreHorizontal className="w-5 h-5" />
-        </button>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className={`p-2 rounded-full transition-all duration-200 ${isMenuOpen
+              ? "text-indigo-600 bg-indigo-50/80 scale-105"
+              : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+              }`}
+          >
+            <MoreHorizontal className="w-5 h-5" />
+          </button>
+
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-52 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-100 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-3 duration-250">
+              {isOwner ? (
+                // OWNER OPTIONS (Your Post / Campaign)
+                <>
+                  <button
+                    onClick={() => handleAction("delete")}
+                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-rose-600 hover:bg-rose-50/80 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-500" />
+                    <span>Delete</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAction("edit")}
+                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4 text-slate-400" />
+                    <span>Edit Details</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAction("pin")}
+                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <Pin className="w-4 h-4 text-slate-400" />
+                    <span>Pin to profile</span>
+                  </button>
+                </>
+              ) : (
+                // NON-OWNER OPTIONS (Other's Post / Campaign)
+                <>
+                  <button
+                    onClick={() => handleAction("report")}
+                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-rose-600 hover:bg-rose-50/80 transition-colors"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-rose-500" />
+                    <span>Report Content</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAction("follow")}
+                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4 text-slate-400" />
+                    <span>Follow Owner</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAction("not_interested")}
+                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <EyeOff className="w-4 h-4 text-slate-400" />
+                    <span>Not interested</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -187,37 +345,34 @@ export function FeedCard({
           </button>
         </div>
 
-        {isCampaign &&
-          String(user.id) !== String(localStorage.getItem("userId")) && (
-            isDonateDisabled ? (
-              <span
-                className={`px-5 py-2 sm:px-6 sm:py-2.5 font-extrabold text-[13px] sm:text-[14px] rounded-full border select-none inline-flex items-center justify-center ${
-                  isCampaignCompleted
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-rose-50 text-rose-700 border-rose-200"
+        {isCampaign && !isOwner && (
+          isDonateDisabled ? (
+            <span
+              className={`px-5 py-2 sm:px-6 sm:py-2.5 font-extrabold text-[13px] sm:text-[14px] rounded-full border select-none inline-flex items-center justify-center ${isCampaignCompleted
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : "bg-rose-50 text-rose-700 border-rose-200"
                 }`}
-              >
-                {isCampaignCompleted ? "complete" : "InComplete"}
-              </span>
-            ) : (
-              <button
-                onClick={() => setIsDonationOpen(true)}
-                className="px-5 py-2 sm:px-6 sm:py-2.5 bg-slate-900 text-white hover:bg-slate-800 font-bold text-[13px] sm:text-[14px] rounded-full active:scale-95 transition-all shadow-sm"
-              >
-                Donate Now
-              </button>
-            )
-          )}
-
-        {isCampaign &&
-          String(user.id) === String(localStorage.getItem("userId")) && (
-            <button
-              onClick={() => navigate("/creator/dashboard")}
-              className="px-5 py-2 sm:px-6 sm:py-2.5 bg-indigo-600 text-white font-bold text-[13px] sm:text-[14px] rounded-full hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
             >
-              View Analytics
+              {isCampaignCompleted ? "complete" : "InComplete"}
+            </span>
+          ) : (
+            <button
+              onClick={() => setIsDonationOpen(true)}
+              className="px-5 py-2 sm:px-6 sm:py-2.5 bg-slate-900 text-white hover:bg-slate-800 font-bold text-[13px] sm:text-[14px] rounded-full active:scale-95 transition-all shadow-sm"
+            >
+              Donate Now
             </button>
-          )}
+          )
+        )}
+
+        {isCampaign && isOwner && (
+          <button
+            onClick={() => navigate("/creator/dashboard")}
+            className="px-5 py-2 sm:px-6 sm:py-2.5 bg-indigo-600 text-white font-bold text-[13px] sm:text-[14px] rounded-full hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
+          >
+            View Analytics
+          </button>
+        )}
       </div>
 
       <DonationModal

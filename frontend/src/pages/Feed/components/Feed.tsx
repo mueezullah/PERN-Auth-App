@@ -84,6 +84,7 @@ export function Feed() {
     type: "thread" as const,
     createdAt: thread.created_at,
     user: {
+      id: thread.user_id,
       name: thread.author_name || "Anonymous",
       avatar: "",
       role: thread.author_role || "user",
