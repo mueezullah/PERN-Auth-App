@@ -1,12 +1,12 @@
-const { Pool } = require("pg");
-const { DB_HOST, DB_USER, DB_PORT, DB_PASSWORD, DB_NAME } = require("./env");
+import { Pool } from "pg";
+import env from "./env.js";
 
-const pool = new Pool({
-  host: DB_HOST,
-  user: DB_USER,
-  port: DB_PORT,
-  password: DB_PASSWORD,
-  database: DB_NAME,
+export const pool = new Pool({
+  host: env.DB_HOST,
+  user: env.DB_USER,
+  port: env.DB_PORT,
+  password: env.DB_PASSWORD,
+  database: env.DB_NAME,
   ssl: {
     rejectUnauthorized: false,
   },
@@ -21,4 +21,4 @@ pool
   .then(() => console.log("✅ Connected to PostgreSQL database"))
   .catch((err) => console.error("Connection error", err));
 
-module.exports = pool;
+export default pool;

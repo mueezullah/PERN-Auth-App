@@ -1,15 +1,17 @@
-const Campaign = require('./campaign.model');
-const { getPaginationData, parsePaginationParams } = require('../../utils/pagination');
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const pool = require("../../config/db");
+import * as Campaign from './campaign.model.js';
+import { getPaginationData, parsePaginationParams } from '../../utils/pagination.js';
+import Stripe from "stripe";
+import pool from "../../config/db.js";
 
-const createCampaign = async (userId, data) => {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export const createCampaign = async (userId, data) => {
   const { title, description, goal_amount, deadline, media_url } = data;
   const newCampaign = await Campaign.create(userId, title, description, goal_amount, deadline, media_url);
   return { success: true, status: 201, data: newCampaign };
 };
 
-const getActiveCampaigns = async (queryPage, queryLimit, status) => {
+export const getActiveCampaigns = async (queryPage, queryLimit, status) => {
   const { page, limit } = parsePaginationParams(queryPage, queryLimit);
   
   if (page < 1 || limit < 1) {
@@ -32,7 +34,7 @@ const getActiveCampaigns = async (queryPage, queryLimit, status) => {
   };
 };
 
-const getCampaignById = async (id) => {
+export const getCampaignById = async (id) => {
   // Update expired campaigns before fetching
   await Campaign.updateExpiredCampaigns();
   
@@ -43,7 +45,7 @@ const getCampaignById = async (id) => {
   return { success: true, status: 200, data: campaign };
 };
 
-const updateCampaign = async (id, userId, data) => {
+export const updateCampaign = async (id, userId, data) => {
   const campaign = await Campaign.findById(id);
   
   if (!campaign) {
@@ -60,7 +62,7 @@ const updateCampaign = async (id, userId, data) => {
   return { success: true, status: 200, data: updatedCampaign };
 };
 
-const deleteCampaign = async (id, userId) => {
+export const deleteCampaign = async (id, userId) => {
   const campaign = await Campaign.findById(id);
   
   if (!campaign) {
@@ -125,12 +127,4 @@ const deleteCampaign = async (id, userId) => {
     data: deletedCampaign,
     refunds: refundResults
   };
-};
-
-module.exports = { 
-  createCampaign, 
-  getActiveCampaigns, 
-  getCampaignById, 
-  updateCampaign, 
-  deleteCampaign 
 };

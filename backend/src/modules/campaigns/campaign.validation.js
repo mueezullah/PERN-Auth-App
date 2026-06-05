@@ -1,4 +1,4 @@
-const Joi = require('joi');
+import Joi from "joi";
 
 const createCampaignSchema = Joi.object({
   title: Joi.string().min(4).max(255).required(),
@@ -16,7 +16,7 @@ const updateCampaignSchema = Joi.object({
   media_url: Joi.string().uri().optional().allow(null, '')
 }).min(1);
 
-const validateCreate = (req, res, next) => {
+export const validateCreate = (req, res, next) => {
   const { error } = createCampaignSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ success: false, message: error.details[0].message });
@@ -24,12 +24,10 @@ const validateCreate = (req, res, next) => {
   next();
 };
 
-const validateUpdate = (req, res, next) => {
+export const validateUpdate = (req, res, next) => {
   const { error } = updateCampaignSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ success: false, message: error.details[0].message });
   }
   next();
 };
-
-module.exports = { validateCreate, validateUpdate };

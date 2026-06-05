@@ -1,16 +1,18 @@
-const express = require("express");
-const authRoutes = require("./modules/auth/auth.routes");
-const campaignRoutes = require("./modules/campaigns/campaign.routes");
-const postRoutes = require("./modules/posts/post.routes");
-const paymentRoutes = require("./modules/payments/payments.route");
+import express from "express";
+import authRoutes from "./modules/auth/auth.routes.js";
+import campaignRoutes from "./modules/campaigns/campaign.routes.js";
+import postRoutes from "./modules/posts/post.routes.js";
+import paymentRoutes from "./modules/payments/payments.route.js";
 
 const router = express.Router();
 
-// Mount module routes
+// Base health verification endpoint
 router.get("/health", (req, res) => res.send("Working Perfectly Well!!!"));
+
+// Mount module routes
 router.use("/auth", authRoutes);
 router.use("/campaigns", campaignRoutes);
 router.use("/posts", postRoutes);
 router.use("/payments", paymentRoutes);
 
-module.exports = router;
+export default router;

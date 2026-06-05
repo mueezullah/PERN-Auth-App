@@ -1,22 +1,19 @@
-const app = require("./app");
-const { PORT } = require("./config/env");
-const UserModel = require("./modules/users/user.model");
-const CampaignModel = require("./modules/campaigns/campaign.model");
-const PostModel = require("./modules/posts/post.model");
-const DonationModel = require("./modules/payments/donation.model");
+import app from "./app.js";
+import env from "./config/env.js"; // Updated to map our default export env structure safely
+import { initializeDatabaseSchema } from "./dbInit.js";
 
-// Initialize the tables
-UserModel.init()
-  .then(() => CampaignModel.init())
-  .then(() => PostModel.init())
-  .then(() => DonationModel.init())
-  .then(() => {
-    console.log("Database schema initialized");
-  })
-  .catch((err) => {
-    console.error("Failed to initialize database:", err);
-  });
+const startServer = async () => {
+  try {
+    // Confirm table setups exist locally before opening socket connections
+    await initializeDatabaseSchema();
+    
+    app.listen(env.PORT, () => {
+      console.log(`📡 Server running locally on port ${env.PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to boot local application server:", error);
+    process.exit(1);
+  }
+};
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+startServer();

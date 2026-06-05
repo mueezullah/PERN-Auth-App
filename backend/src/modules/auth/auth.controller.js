@@ -1,6 +1,6 @@
-const authService = require("./auth.service");
+import * as authService from "./auth.service.js";
 
-const signup = async (req, res) => {
+export const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const result = await authService.signupUser(name, email, password);
@@ -20,7 +20,7 @@ const signup = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await authService.loginUser(email, password);
@@ -40,7 +40,7 @@ const login = async (req, res) => {
   }
 };
 
-const getAllUsers = async (req, res) => {
+export const getAllUsers = async (req, res) => {
   try {
     const result = await authService.fetchAllUsers();
     res.status(200).json(result);
@@ -51,5 +51,3 @@ const getAllUsers = async (req, res) => {
       .json({ message: "Internal Server Error", success: false });
   }
 };
-
-module.exports = { signup, login, getAllUsers };

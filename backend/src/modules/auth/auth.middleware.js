@@ -1,10 +1,10 @@
-const { verifyToken } = require("../../utils/jwt");
+import { verifyToken } from "../../utils/jwt.js";
 
 // Checks if user is logged in with a valid JWT
-const ensureAuthenticated = (req, res, next) => {
+export const ensureAuthenticated = (req, res, next) => {
   const auth = req.headers["authorization"];
   if (!auth) {
-    return res.status(403).json({
+    return res.status(401).json({
       message: "Unauthorized, JWT token is required",
     });
   }
@@ -14,14 +14,14 @@ const ensureAuthenticated = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(403).json({
+    return res.status(401).json({
       message: "Unauthorized, JWT token wrong or expired",
     });
   }
 };
 
 // Checks if authenticated user has admin role
-const ensureAdmin = (req, res, next) => {
+export const ensureAdmin = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     next();
   } else {
@@ -30,5 +30,3 @@ const ensureAdmin = (req, res, next) => {
     });
   }
 };
-
-module.exports = { ensureAuthenticated, ensureAdmin };

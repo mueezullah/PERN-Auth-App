@@ -1,8 +1,8 @@
-const UserModel = require("../users/user.model");
-const { hashPassword, comparePassword } = require("../../utils/hash");
-const { generateToken } = require("../../utils/jwt");
+import * as UserModel from "../users/user.model.js";
+import { hashPassword, comparePassword } from "../../utils/hash.js";
+import { generateToken } from "../../utils/jwt.js";
 
-const signupUser = async (name, email, password) => {
+export const signupUser = async (name, email, password) => {
   const existingUser = await UserModel.findByEmail(email);
   if (existingUser) {
     return { success: false, status: 409, message: "User already exists" };
@@ -39,7 +39,7 @@ const signupUser = async (name, email, password) => {
   };
 };
 
-const loginUser = async (email, password) => {
+export const loginUser = async (email, password) => {
   const user = await UserModel.findByEmail(email);
   const errorMessage =
     "Authentication failed, Email or password is incorrect";
@@ -83,7 +83,7 @@ const loginUser = async (email, password) => {
   };
 };
 
-const fetchAllUsers = async () => {
+export const fetchAllUsers = async () => {
   const users = await UserModel.findAll();
   return {
     success: true,
@@ -91,5 +91,3 @@ const fetchAllUsers = async () => {
     totalUsers: users.length,
   };
 };
-
-module.exports = { signupUser, loginUser, fetchAllUsers };

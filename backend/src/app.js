@@ -1,18 +1,18 @@
-const express = require("express");
-const cors = require("cors");
-const routes = require("./routes");
-const errorHandler = require("./middlewares/errorHandler");
+import express from "express";
+import cors from "cors";
+import routes from "./routes.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
 
-// Global middlewares
+// Global request pipeline parsing and security middlewares
 app.use(express.json());
 app.use(cors());
 
-// Mount all routes
+// mount all routes
 app.use(routes);
 
 // Global error handler (must be after routes)
 app.use(errorHandler);
 
-module.exports = app;
+export default app;

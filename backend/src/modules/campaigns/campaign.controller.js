@@ -1,7 +1,11 @@
-const campaignService = require("./campaign.service");
+import * as campaignService from "./campaign.service.js";
 
-const create = async (req, res) => {
-  try {
+// Central wrapper to pipe unexpected exceptions straight to your errorHandler middleware
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+export const create = asyncHandler(async (req, res) => {
     if (req.user.role !== 'fundraiser' && req.user.role !== 'admin') {
       return res
         .status(403)
@@ -15,14 +19,9 @@ const create = async (req, res) => {
     res
       .status(result.status)
       .json({ success: result.success, data: result.data });
-  } catch (error) {
-    console.error("Create campaign error:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
+});
 
-const listActive = async (req, res) => {
-  try {
+export const listActive = asyncHandler(async (req, res) => {
     const { page, limit, status } = req.query;
     const result = await campaignService.getActiveCampaigns(page, limit, status);
     if (!result.success) {
@@ -31,14 +30,9 @@ const listActive = async (req, res) => {
         .json({ success: false, message: result.message });
     }
     res.status(result.status).json({ success: true, data: result.data });
-  } catch (error) {
-    console.error("List campaigns error:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
+});
 
-const getOne = async (req, res) => {
-  try {
+export const getOne = asyncHandler(async (req, res) => {
     const result = await campaignService.getCampaignById(req.params.id);
     if (!result.success) {
       return res
@@ -46,14 +40,9 @@ const getOne = async (req, res) => {
         .json({ success: false, message: result.message });
     }
     res.status(result.status).json({ success: true, data: result.data });
-  } catch (error) {
-    console.error("Get campaign error:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
+});
 
-const update = async (req, res) => {
-  try {
+export const update = asyncHandler(async (req, res) => {
     const result = await campaignService.updateCampaign(
       req.params.id,
       req.user.id,
@@ -65,14 +54,9 @@ const update = async (req, res) => {
         .json({ success: false, message: result.message });
     }
     res.status(result.status).json({ success: true, data: result.data });
-  } catch (error) {
-    console.error("Update campaign error:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
+});
 
-const deleteCampaign = async (req, res) => {
-  try {
+export const deleteCampaign = asyncHandler(async (req, res) => {
     const result = await campaignService.deleteCampaign(
       req.params.id,
       req.user.id
@@ -88,16 +72,4 @@ const deleteCampaign = async (req, res) => {
       data: result.data,
       refunds: result.refunds
     });
-  } catch (error) {
-    console.error("Delete campaign error:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
-
-module.exports = {
-  create,
-  listActive,
-  getOne,
-  update,
-  deleteCampaign
-};
+});

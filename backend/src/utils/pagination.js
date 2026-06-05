@@ -1,16 +1,18 @@
-const getPaginationData = (total, page, limit) => {
+export const getPaginationData = (total, page, limit) => {
+  const totalInt = parseInt(total, 10) || 0;
+  const pageInt = parseInt(page, 10) || 1;
+  const limitInt = parseInt(limit, 10) || 10;
+
   return {
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
+    total: totalInt,
+    page: pageInt,
+    limit: limitInt,
+    totalPages: Math.ceil(totalInt / limitInt),
   };
 };
 
-const parsePaginationParams = (queryPage, queryLimit) => {
+export const parsePaginationParams = (queryPage, queryLimit) => {
   const page = parseInt(queryPage, 10) || 1;
   const limit = parseInt(queryLimit, 10) || 10;
   return { page, limit };
 };
-
-module.exports = { getPaginationData, parsePaginationParams };

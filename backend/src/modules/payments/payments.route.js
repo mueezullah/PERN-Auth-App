@@ -1,14 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const paymentController = require("./payments.controller");
-const { ensureAuthenticated } = require("../auth/auth.middleware");
+import express from "express";
+import { createDonationIntent, confirmDonation } from './payments.controller.js';
+import { ensureAuthenticated } from '../auth/auth.middleware.js';
 
+const router = express.Router();
 // POST /api/payments/create-intent
 // We use 'ensureAuthenticated' because we need to know WHICH user is donating
-router.post("/create-intent", ensureAuthenticated, paymentController.createDonationIntent);
+router.post("/create-intent", ensureAuthenticated, createDonationIntent);
 
 // POST /api/payments/confirm
 // Called when frontend says Stripe succeeded. We verify and update the DB!
-router.post("/confirm", ensureAuthenticated, paymentController.confirmDonation);
+router.post("/confirm", ensureAuthenticated, confirmDonation);
 
-module.exports = router;
+export default router;

@@ -1,13 +1,13 @@
-require("dotenv/config");
+import "dotenv/config";
 
 const requiredEnvs = ["JWT_SECRET", "DB_PASSWORD"];
 const missingEnvs = requiredEnvs.filter((envName) => !process.env[envName]);
 
 if (missingEnvs.length > 0) {
   console.error(
-    `🚨 FATAL ERROR: Missing required environment variables: ${missingEnvs.join(", ")}`,
+    `🚨 FATAL CONFIG ERROR: Missing required environment variables: ${missingEnvs.join(", ")}`,
   );
-  process.exit(1);
+  throw new Error(`Configuration Failed: Missing env variables [${missingEnvs.join(", ")}]`)
 }
 
 const PORT = process.env.PORT || 8080;
@@ -18,7 +18,7 @@ const DB_PORT = process.env.DB_PORT;
 const DB_PASSWORD = process.env.DB_PASSWORD;
 const DB_NAME = process.env.DB_NAME || "pern_auth";
 
-module.exports = {
+export default {
   PORT,
   JWT_SECRET,
   DB_HOST,

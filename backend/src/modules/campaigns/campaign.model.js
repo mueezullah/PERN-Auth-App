@@ -1,6 +1,6 @@
-const pool = require("../../config/db");
+import { pool } from "../../config/db.js";
 
-const initTable = async () => {
+export const initTable = async () => {
   const query = `
     CREATE TABLE IF NOT EXISTS campaigns (
         id SERIAL PRIMARY KEY,
@@ -28,28 +28,25 @@ const initTable = async () => {
   }
 };
 
-const Campaign = {
-  init: initTable,
+export const create = async (userId, title, description, goalAmount, deadline, mediaUrl) => {
+  const query = `
+    INSERT INTO campaigns (user_id, title, description, goal_amount, deadline, media_url)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING *;
+  `;
+  const values = [userId, title, description, goalAmount, deadline, mediaUrl];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
 
-  create: async (userId, title, description, goalAmount, deadline, mediaUrl) => {
-    const query = `
-      INSERT INTO campaigns (user_id, title, description, goal_amount, deadline, media_url)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *;
-    `;
-    const values = [userId, title, description, goalAmount, deadline, mediaUrl];
-    const result = await pool.query(query, values);
-    return result.rows[0];
-  },
-
-  findAllActive: async (limit, offset, status = 'active') => {
-    let query = `
+export const findAllActive = async (limit, offset, status = 'active') => {
+  let query = `
       SELECT c.*, u.name as owner_name 
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
     `;
-    let countQuery = `SELECT COUNT(*) FROM campaigns`;
-    const queryParams = [];
+  let countQuery = `SELECT COUNT(*) FROM campaigns`;
+  const queryParams = [];
     const countParams = [];
 
     if (status && status !== 'all') {
@@ -75,10 +72,10 @@ const Campaign = {
       campaigns: result.rows,
       total: parseInt(countResult.rows[0].count, 10)
     };
-  },
+};
 
-  findById: async (id) => {
-    const query = `
+export const findById = async (id) => {
+  const query = `
       SELECT c.*, u.name as owner_name, u.email as owner_email
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
@@ -86,10 +83,10 @@ const Campaign = {
     `;
     const result = await pool.query(query, [id]);
     return result.rows[0] || null;
-  },
+};
 
-  update: async (id, title, description, goalAmount, deadline, mediaUrl) => {
-    const query = `
+export const update = async (id, title, description, goalAmount, deadline, mediaUrl) => {
+  const query = `
       UPDATE campaigns
       SET title = COALESCE($1, title),
           description = COALESCE($2, description),
@@ -102,10 +99,10 @@ const Campaign = {
     `;
     const result = await pool.query(query, [title, description, goalAmount, deadline, mediaUrl, id]);
     return result.rows[0];
-  },
+};
 
-  updateExpiredCampaigns: async () => {
-    const query = `
+export const updateExpiredCampaigns = async () => {
+  const query = `
       UPDATE campaigns
       SET status = 'ended',
           updated_at = CURRENT_TIMESTAMP
@@ -114,10 +111,10 @@ const Campaign = {
     `;
     const result = await pool.query(query);
     return result.rows;
-  },
+};
 
-  deleteCampaign: async (id) => {
-    const query = `
+export const deleteCampaign = async (id) => {
+  const query = `
       UPDATE campaigns
       SET status = 'deleted', current_amount = 0, updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
@@ -125,7 +122,4 @@ const Campaign = {
     `;
     const result = await pool.query(query, [id]);
     return result.rows[0] || null;
-  }
 };
-
-module.exports = Campaign;

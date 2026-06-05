@@ -1,6 +1,6 @@
-const pool = require("../../config/db");
+import pool from "../../config/db.js";
 
-const initTable = async () => {
+export const initTable = async () => {
   const query = `
     CREATE TABLE IF NOT EXISTS donations (
       id SERIAL PRIMARY KEY,
@@ -24,9 +24,3 @@ const initTable = async () => {
     throw error;
   }
 };
-
-const Donation = {
-  init: initTable
-};
-
-module.exports = Donation;
