@@ -37,7 +37,7 @@ export const createPost = async (userId, content, mediaUrl) => {
 
 export const findAllPosts = async (limit = 10, offset = 0) => {
   const query = `
-      SELECT p.*, u.name as author_name, u.email as author_email, u.role as author_role
+      SELECT p.*, COUNT(*) OVER() as total_count, u.name as author_name, u.email as author_email, u.role as author_role
       FROM posts p
       JOIN users u ON p.user_id = u.id
       WHERE p.status != 'deleted'
@@ -55,7 +55,7 @@ export const findAllPosts = async (limit = 10, offset = 0) => {
 
 export const findByUserId = async (userId, limit = 10, offset = 0) => {
   const query = `
-      SELECT p.*, u.name as author_name, u.email as author_email
+      SELECT p.*, COUNT(*) OVER() as total_count, u.name as author_name, u.email as author_email
       FROM posts p
       JOIN users u ON p.user_id = u.id
       WHERE p.user_id = $1 AND p.status != 'deleted'
@@ -96,6 +96,7 @@ export const updatePost = async (id, userId, content, mediaUrl) => {
       UPDATE posts
       SET content = COALESCE($1, content),
           media_url = COALESCE($2, media_url),
+          status = 'updated',
           updated_at = CURRENT_TIMESTAMP
       WHERE id = $3 AND user_id = $4
       RETURNING *;

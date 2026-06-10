@@ -1,23 +1,45 @@
-import React, { useState, useRef, useCallback } from "react";
-import { X, Image as ImageIcon, Film, Smile, Send, Loader2, AtSign } from "lucide-react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { X, Image as ImageIcon, Film, Smile, Send, Loader2, AtSign, Pencil } from "lucide-react";
 
 import { useCreatePost } from "../../../features/Posts/postsSlice";
+import * as postsAPI from "../../../features/Posts/postsAPI";
+import { handleSuccess, handleError } from "../../../utils";
 
 interface CreateThreadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (newPost: any) => void;
+  /** Edit mode — pass these to pre-fill the form and switch to PUT */
+  editMode?: boolean;
+  editPostId?: string; // raw numeric id e.g. "3"
+  initialContent?: string;
+  initialImage?: string;
 }
 
 const MAX_CHARS = 500;
 
-export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadModalProps) {
-  const [message, setMessage] = useState("");
+export function CreateThreadModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  editMode = false,
+  editPostId,
+  initialContent = "",
+  initialImage,
+}: CreateThreadModalProps) {
+  const [message, setMessage] = useState(editMode ? initialContent : "");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(
+    editMode && initialImage ? initialImage : null
+  );
+  const [mediaType, setMediaType] = useState<"image" | "video" | null>(
+    editMode && initialImage ? "image" : null
+  );
   const [dragOver, setDragOver] = useState(false);
-  const { create, loading: isPosting, error } = useCreatePost();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const { create, loading: isPosting, error: createError } = useCreatePost();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -26,6 +48,17 @@ export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadMo
   const charsLeft = MAX_CHARS - message.length;
   const isOverLimit = charsLeft < 0;
   const isEmpty = message.trim().length === 0 && !mediaFile;
+
+  // Reset form state when the modal opens/closes or switches between modes
+  useEffect(() => {
+    if (isOpen) {
+      setMessage(editMode ? initialContent : "");
+      setMediaPreview(editMode && initialImage ? initialImage : null);
+      setMediaFile(null);
+      setMediaType(editMode && initialImage ? "image" : null);
+      setSubmitError(null);
+    }
+  }, [isOpen, editMode, initialContent, initialImage]);
 
   const handleFileSelect = (file: File) => {
     if (!file) return;
@@ -74,20 +107,39 @@ export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadMo
   };
 
   const handleSubmit = async () => {
-    if (isEmpty || isOverLimit || isPosting) return;
+    if (isEmpty || isOverLimit || isPosting || isSubmitting) return;
+    setSubmitError(null);
+
     try {
-      const newPost = await create({
-        content: message,
-        mediaUrl: ""
-      });
-      setMessage("");
-      removeMedia();
-      onClose();
-      if (onSuccess) {
-        onSuccess(newPost); // Pass the created post back so Feed can prepend it instantly
+      if (editMode && editPostId) {
+        // --- EDIT mode: PUT ---
+        setIsSubmitting(true);
+        const updatedPost = await postsAPI.updatePost(editPostId, {
+          content: message,
+          mediaUrl: mediaPreview || "",
+        });
+        handleSuccess("Post updated successfully!");
+        if (onSuccess) onSuccess(updatedPost);
+        onClose();
+      } else {
+        // --- CREATE mode: POST ---
+        const newPost = await create({
+          content: message,
+          mediaUrl: "",
+        });
+        setMessage("");
+        removeMedia();
+        onClose();
+        if (onSuccess) {
+          onSuccess(newPost);
+        }
       }
-    } catch (err) {
-      console.error("Failed to create post:", err);
+    } catch (err: any) {
+      const msg = err.message || "Something went wrong";
+      setSubmitError(msg);
+      handleError(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -96,6 +148,9 @@ export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadMo
   };
 
   if (!isOpen) return null;
+
+  const isBusy = isPosting || isSubmitting;
+  const displayError = submitError || createError;
 
   return (
     <div
@@ -108,7 +163,16 @@ export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadMo
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
-          <h2 className="text-[17px] font-extrabold text-slate-900 tracking-tight">New Thread</h2>
+          <div className="flex items-center space-x-2">
+            {editMode && (
+              <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center">
+                <Pencil className="w-3.5 h-3.5 text-indigo-600" />
+              </div>
+            )}
+            <h2 className="text-[17px] font-extrabold text-slate-900 tracking-tight">
+              {editMode ? "Edit Post" : "New Thread"}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
@@ -131,14 +195,18 @@ export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadMo
                 ref={textareaRef}
                 value={message}
                 onChange={handleTextareaInput}
-                placeholder="What's on your mind? Share a thought, update, or story..."
+                placeholder={
+                  editMode
+                    ? "Update your post..."
+                    : "What's on your mind? Share a thought, update, or story..."
+                }
                 rows={3}
                 className="w-full bg-transparent text-slate-800 placeholder-slate-400 text-[15px] leading-relaxed focus:outline-none resize-none overflow-hidden"
                 style={{ minHeight: "80px" }}
                 autoFocus
               />
-              {error && (
-                <p className="text-red-500 text-xs mt-1">{error}</p>
+              {displayError && (
+                <p className="text-red-500 text-xs mt-1">{displayError}</p>
               )}
             </div>
           </div>
@@ -186,7 +254,10 @@ export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadMo
               onClick={() => fileInputRef.current?.click()}
             >
               <ImageIcon className="w-4 h-4" />
-              <span>Drop or click to attach media <span className="text-slate-300 font-normal">(optional)</span></span>
+              <span>
+                {editMode ? "Change media" : "Drop or click to attach media"}{" "}
+                <span className="text-slate-300 font-normal">(optional)</span>
+              </span>
             </div>
           )}
         </div>
@@ -223,7 +294,7 @@ export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadMo
             </button>
           </div>
 
-          {/* Char count + Post */}
+          {/* Char count + Submit */}
           <div className="flex items-center space-x-3">
             {/* Char counter ring */}
             <div className="relative w-6 h-6">
@@ -253,18 +324,22 @@ export function CreateThreadModal({ isOpen, onClose, onSuccess }: CreateThreadMo
 
             <button
               onClick={handleSubmit}
-              disabled={isEmpty || isOverLimit || isPosting}
-              className="flex items-center space-x-2 px-5 py-2 bg-slate-900 text-white text-[13px] font-bold rounded-full hover:bg-slate-800 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+              disabled={isEmpty || isOverLimit || isBusy}
+              className={`flex items-center space-x-2 px-5 py-2 text-white text-[13px] font-bold rounded-full active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm ${
+                editMode
+                  ? "bg-indigo-600 hover:bg-indigo-700"
+                  : "bg-slate-900 hover:bg-slate-800"
+              }`}
             >
-              {isPosting ? (
+              {isBusy ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Posting...</span>
+                  <span>{editMode ? "Saving..." : "Posting..."}</span>
                 </>
               ) : (
                 <>
                   <Send className="w-3.5 h-3.5" />
-                  <span>Post</span>
+                  <span>{editMode ? "Save Changes" : "Post"}</span>
                 </>
               )}
             </button>

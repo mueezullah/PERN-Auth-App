@@ -29,3 +29,16 @@ export const createPost = async (postData) => {
   }
   return data.data;
 };
+
+export const updatePost = async (id, postData) => {
+  const res = await fetch(`${API_BASE}/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(postData),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to update post");
+  }
+  return data.data;
+};

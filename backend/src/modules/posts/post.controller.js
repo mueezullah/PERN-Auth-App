@@ -14,7 +14,7 @@ export const createPost = asyncHandler(async (req, res, next) => {
     return res.status(400).json({ success: false, message: "Post content is required" });
   }
 
-  const newPost = await Postcreate(userId, content, mediaUrl);
+  const newPost = await Post.createPost(userId, content, mediaUrl);
   res.status(201).json({
     success: true,
     message: "Post created successfully",
@@ -27,7 +27,7 @@ export const getAllPosts = asyncHandler(async (req, res, next) => {
   const { page, limit } = parsePaginationParams(req.query.page, req.query.limit);
   const offset = (page - 1) * limit;
 
-  const { posts, total } = await Post.findAll(limit, offset);
+  const { posts, total } = await Post.findAllPosts(limit, offset);
 
   res.status(200).json({
     success: true,
@@ -83,7 +83,7 @@ export const deletePost = asyncHandler(async (req, res, next) => {
   }
 
   // 4. Delete the post
-  const deletedPost = await Post.delete(postId);
+  const deletedPost = await Post.deletePost(postId);
 
   res.status(200).json({
     success: true,
@@ -98,7 +98,7 @@ export const updatePost = asyncHandler(async (req, res, next) => {
   const userId = req.user.id;
   const { content, mediaUrl } = req.body;
 
-  const updatedPost = await Post.update(postId, userId, content, mediaUrl);
+  const updatedPost = await Post.updatePost(postId, userId, content, mediaUrl);
 
   if (!updatedPost) {
     return res.status(404).json({
