@@ -93,6 +93,7 @@ export const update = async (id, title, description, goalAmount, deadline, media
           goal_amount = COALESCE($3, goal_amount),
           deadline = COALESCE($4, deadline),
           media_url = COALESCE($5, media_url),
+          status = 'updated',
           updated_at = CURRENT_TIMESTAMP
       WHERE id = $6
       RETURNING *;
