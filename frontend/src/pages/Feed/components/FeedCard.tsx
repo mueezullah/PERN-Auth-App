@@ -42,6 +42,8 @@ interface FeedCardProps {
   };
   deadline?: string;
   campaignStatus?: string;
+  /** Called when owner clicks Edit — passes the full card data back to the parent */
+  onEdit?: (cardData: FeedCardProps) => void;
 }
 
 export function FeedCard({
@@ -52,6 +54,7 @@ export function FeedCard({
   stats,
   deadline,
   campaignStatus,
+  onEdit,
 }: FeedCardProps) {
   const currentUserId = localStorage.getItem("userId");
   const isOwner = !!(currentUserId && user?.id && String(user.id) === String(currentUserId));
@@ -133,8 +136,9 @@ export function FeedCard({
         break;
 
       case "edit":
-        handleSuccess("Edit modal or form opened!");
-        // TODO: Open an edit modal or redirect to edit page
+        if (onEdit) {
+          onEdit({ id, type, user, content, stats, deadline, campaignStatus });
+        }
         break;
 
       case "pin":
@@ -197,7 +201,7 @@ export function FeedCard({
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={`p-2 rounded-full transition-all duration-200 ${isMenuOpen
+            className={`cursor-pointer p-2 rounded-full transition-all duration-200 ${isMenuOpen
               ? "text-indigo-600 bg-indigo-50/80 scale-105"
               : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
               }`}
@@ -206,13 +210,13 @@ export function FeedCard({
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-100 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-3 duration-250">
+            <div className="absolute right-0 mt-2 w-52 bg-[#1a1a1b] border border-slate-700/50 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.5)] py-2 z-50 text-[#d7dadc] animate-in fade-in slide-in-from-top-3 duration-250">
               {isOwner ? (
                 // OWNER OPTIONS (Your Post / Campaign)
                 <>
                   <button
                     onClick={() => handleAction("delete")}
-                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-rose-600 hover:bg-rose-50/80 transition-colors"
+                    className="flex cursor-pointer items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
                   >
                     <Trash2 className="w-4 h-4 text-rose-500" />
                     <span>Delete</span>
@@ -220,17 +224,17 @@ export function FeedCard({
 
                   <button
                     onClick={() => handleAction("edit")}
-                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="flex cursor-pointer items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-medium text-[#d7dadc] hover:bg-[#272729] transition-colors"
                   >
-                    <Edit2 className="w-4 h-4 text-slate-400" />
+                    <Edit2 className="w-4 h-4 text-[#d7dadc]" />
                     <span>Edit Details</span>
                   </button>
 
                   <button
                     onClick={() => handleAction("pin")}
-                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="flex cursor-pointer items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-medium text-[#d7dadc] hover:bg-[#272729] transition-colors"
                   >
-                    <Pin className="w-4 h-4 text-slate-400" />
+                    <Pin className="w-4 h-4 text-[#d7dadc]" />
                     <span>Pin to profile</span>
                   </button>
                 </>
@@ -239,7 +243,7 @@ export function FeedCard({
                 <>
                   <button
                     onClick={() => handleAction("report")}
-                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-rose-600 hover:bg-rose-50/80 transition-colors"
+                    className="flex cursor-pointer items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
                   >
                     <AlertTriangle className="w-4 h-4 text-rose-500" />
                     <span>Report Content</span>
@@ -247,17 +251,17 @@ export function FeedCard({
 
                   <button
                     onClick={() => handleAction("follow")}
-                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="flex cursor-pointer items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-medium text-[#d7dadc] hover:bg-[#272729] transition-colors"
                   >
-                    <UserPlus className="w-4 h-4 text-slate-400" />
+                    <UserPlus className="w-4 h-4 text-[#d7dadc]" />
                     <span>Follow Owner</span>
                   </button>
 
                   <button
                     onClick={() => handleAction("not_interested")}
-                    className="flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="flex cursor-pointer items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-medium text-[#d7dadc] hover:bg-[#272729] transition-colors"
                   >
-                    <EyeOff className="w-4 h-4 text-slate-400" />
+                    <EyeOff className="w-4 h-4 text-[#d7dadc]" />
                     <span>Not interested</span>
                   </button>
                 </>
@@ -359,7 +363,7 @@ export function FeedCard({
           ) : (
             <button
               onClick={() => setIsDonationOpen(true)}
-              className="px-5 py-2 sm:px-6 sm:py-2.5 bg-slate-900 text-white hover:bg-slate-800 font-bold text-[13px] sm:text-[14px] rounded-full active:scale-95 transition-all shadow-sm"
+              className="px-5 cursor-pointer py-2 sm:px-6 sm:py-2.5 bg-slate-900 text-white hover:bg-slate-800 font-bold text-[13px] sm:text-[14px] rounded-full active:scale-95 transition-all shadow-sm"
             >
               Donate Now
             </button>
@@ -369,7 +373,7 @@ export function FeedCard({
         {isCampaign && isOwner && (
           <button
             onClick={() => navigate("/creator/dashboard")}
-            className="px-5 py-2 sm:px-6 sm:py-2.5 bg-indigo-600 text-white font-bold text-[13px] sm:text-[14px] rounded-full hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
+            className="px-5 py-2 cursor-pointer sm:px-6 sm:py-2.5 bg-indigo-600 text-white font-bold text-[13px] sm:text-[14px] rounded-full hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
           >
             View Analytics
           </button>

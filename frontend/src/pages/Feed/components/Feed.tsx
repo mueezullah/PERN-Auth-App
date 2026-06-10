@@ -6,6 +6,7 @@ import React, {
 import { useNavigate } from "react-router-dom";
 import { FeedCard } from "./FeedCard";
 import { CreateThreadModal } from "./CreateThreadModal";
+import CreateCampaignModal from "../../../pages/CreatorDashboard/CreateCampaignModal";
 import { Sparkles, Edit3, Megaphone } from "lucide-react";
 import { useCampaigns } from "../../../features/creator/creatorSlice";
 import { usePosts } from '../../../features/Posts/postsSlice';
@@ -14,9 +15,10 @@ export function Feed() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
-  const { campaigns, pagination, loading, error } = useCampaigns(page, 10, "all");
+  const [editingCard, setEditingCard] = useState<any | null>(null);
+  const { campaigns, pagination, loading, error, refetch: refetchCampaigns } = useCampaigns(page, 10, "all");
 
-  const { posts, loading: postsLoading, error: postsError, prependPost } = usePosts(page, 10);
+  const { posts, loading: postsLoading, error: postsError, prependPost, refetch: refetchPosts } = usePosts(page, 10);
 
   const role = localStorage.getItem("role");
 
@@ -31,6 +33,17 @@ export function Feed() {
   const handlePostClick = () => {
     setIsThreadModalOpen(true);
   };
+
+  const handleEdit = useCallback((cardData: any) => {
+    setEditingCard(cardData);
+  }, []);
+
+  const handleEditSuccess = useCallback(() => {
+    setEditingCard(null);
+    // Refetch both feeds to reflect the updated content
+    refetchCampaigns?.();
+    refetchPosts?.();
+  }, [refetchCampaigns, refetchPosts]);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const hasMore = pagination ? (pagination as any).currentPage < (pagination as any).totalPages : true;
@@ -147,7 +160,7 @@ export function Feed() {
 
           <button
             onClick={handlePostClick}
-            className="px-5 py-1.5 bg-slate-900 text-white text-[13px] font-bold rounded-full hover:bg-slate-800 transition-colors"
+            className="px-5 py-1.5 cursor-pointer bg-slate-900 text-white text-[13px] font-bold rounded-full hover:bg-slate-800 transition-colors"
           >
             Post
           </button>
@@ -168,6 +181,36 @@ export function Feed() {
           });
         }}
       />
+
+      {/* Edit Post — reuse CreateThreadModal in edit mode */}
+      {editingCard && (editingCard.type === "post" || editingCard.type === "thread") && (
+        <CreateThreadModal
+          isOpen={true}
+          onClose={() => setEditingCard(null)}
+          editMode={true}
+          editPostId={editingCard.id.replace("post-", "")}
+          initialContent={editingCard.content.description}
+          initialImage={editingCard.content.image}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {/* Edit Campaign — reuse CreateCampaignModal in edit mode */}
+      {editingCard && editingCard.type === "campaign" && (
+        <CreateCampaignModal
+          editMode={true}
+          editCampaignId={editingCard.id.replace("campaign-", "")}
+          initialData={{
+            title: editingCard.content.title || "",
+            description: editingCard.content.description,
+            goal_amount: editingCard.stats.goal || 0,
+            deadline: editingCard.deadline || "",
+            media_url: editingCard.content.image || "",
+          }}
+          onClose={() => setEditingCard(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
 
       {/* Error State */}
       {(error || postsError) && !loading && !postsLoading && combinedFeed.length === 0 && (
@@ -213,11 +256,11 @@ export function Feed() {
         if (combinedFeed.length === index + 1) {
           return (
             <div ref={lastPostElementRef} key={post.id}>
-              <FeedCard {...post} />
+              <FeedCard {...post} onEdit={handleEdit} />
             </div>
           );
         } else {
-          return <FeedCard key={post.id} {...post} />;
+          return <FeedCard key={post.id} {...post} onEdit={handleEdit} />;
         }
       })}
 

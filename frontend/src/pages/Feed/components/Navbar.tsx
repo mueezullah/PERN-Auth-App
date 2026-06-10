@@ -111,7 +111,7 @@ export function Navbar({
           <Menu className="w-6 h-6" />
         </button>
 
-        <div className="shrink-0 w-auto md:w-64 text-xl md:text-2xl font-extrabold tracking-tight text-slate-900 flex items-center">
+        <div className="shrink-0 ml-4 w-auto md:w-64 text-xl md:text-2xl font-extrabold tracking-tight text-slate-900 flex items-center">
           <Link to="/feed">
             FUNDME<span className="text-indigo-600">.</span>
           </Link>
@@ -131,7 +131,7 @@ export function Navbar({
           </button>
         </div>
 
-        <div className="shrink-0 flex justify-end items-center space-x-2 md:space-x-5 text-slate-600">
+        <div className="shrink-0 mr-4 flex justify-end items-center space-x-2 md:space-x-3 text-slate-600">
           <button className="p-2 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors hidden sm:block">
             <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
           </button>
@@ -140,7 +140,7 @@ export function Navbar({
           <div className="relative" ref={createDropdownRef}>
             <button
               onClick={() => setIsCreateDropdownOpen(!isCreateDropdownOpen)}
-              className="flex items-center space-x-1.5 font-semibold text-slate-700 hover:text-indigo-600 transition-colors px-3 py-1.5 rounded-full hover:bg-indigo-50"
+              className="flex cursor-pointer items-center space-x-1.5 font-semibold text-slate-700 hover:text-indigo-600 transition-colors px-3 py-1.5 rounded-full hover:bg-indigo-50"
             >
               <PlusSquare className="w-5 h-5 md:w-6 md:h-6" />
               <span className="hidden md:inline text-sm">Create</span>
@@ -196,12 +196,17 @@ export function Navbar({
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
           </button>
           <div className="relative hidden sm:block" ref={dropdownRef}>
-            <button
-              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-              className="hover:ring-2 hover:ring-indigo-500/30 transition-all overflow-hidden rounded-full border border-slate-200 block"
-            >
-              <User className="w-7 h-7 md:w-9 md:h-9 text-slate-500 bg-slate-100 p-1.5 rounded-full cursor-pointer" />
-            </button>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-slate-700">
+                {localStorage.getItem("loggedInUser") || "User"}
+              </span>
+              <button
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                className="hover:ring-2 hover:ring-indigo-500/30 transition-all overflow-hidden rounded-full border border-slate-200 block"
+              >
+                <User className="w-7 h-7 md:w-9 md:h-9 text-slate-500 bg-slate-100 p-1.5 rounded-full cursor-pointer" />
+              </button>
+            </div>
             {isProfileDropdownOpen && (
               <div className="absolute top-full right-0 mt-3 w-64 bg-[#1a1a1b] border border-slate-700/50 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col z-50 py-2 text-[#d7dadc]">
                 {profileMenuItems.map((item) => (
