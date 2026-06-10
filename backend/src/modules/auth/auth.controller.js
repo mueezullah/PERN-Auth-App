@@ -5,6 +5,7 @@ export const signup = async (req, res) => {
     const { name, email, password } = req.body;
     const result = await authService.signupUser(name, email, password);
 
+    
     if (!result.success) {
       return res
         .status(result.status)
