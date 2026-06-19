@@ -47,10 +47,8 @@ const Signup = () => {
         localStorage.setItem("token", jwtToken);
         localStorage.setItem("role", role);
         localStorage.setItem("userId", String(id));
-        handleSuccess(message);
-        setTimeout(() => {
-          navigate(redirectTo);
-        }, 1000);
+        sessionStorage.setItem("pendingToast", `authenticated as ${name}`);
+        navigate(redirectTo);
       } else if (error) {
         handleError(error);
       } else if (!success) {

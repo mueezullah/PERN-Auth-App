@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { X, Image as ImageIcon, Film, Smile, Send, Loader2, AtSign, Pencil } from "lucide-react";
-
+import { showMinimalToast } from "../../../components/MinimalToast";
 import { useCreatePost } from "../../../features/Posts/postsSlice";
 import * as postsAPI from "../../../features/Posts/postsAPI";
 import { handleSuccess, handleError } from "../../../utils";
@@ -9,9 +9,8 @@ interface CreateThreadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (newPost: any) => void;
-  /** Edit mode — pass these to pre-fill the form and switch to PUT */
   editMode?: boolean;
-  editPostId?: string; // raw numeric id e.g. "3"
+  editPostId?: string;
   initialContent?: string;
   initialImage?: string;
 }
@@ -118,7 +117,7 @@ export function CreateThreadModal({
           content: message,
           mediaUrl: mediaPreview || "",
         });
-        handleSuccess("Post updated successfully!");
+        showMinimalToast("Post Updated Successfully");
         if (onSuccess) onSuccess(updatedPost);
         onClose();
       } else {
@@ -127,6 +126,7 @@ export function CreateThreadModal({
           content: message,
           mediaUrl: "",
         });
+        showMinimalToast("Post Created");
         setMessage("");
         removeMedia();
         onClose();
@@ -245,11 +245,10 @@ export function CreateThreadModal({
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              className={`ml-13 mb-4 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center py-5 text-slate-400 text-[13px] font-medium space-x-2 ${
-                dragOver
+              className={`ml-13 mb-4 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center py-5 text-slate-400 text-[13px] font-medium space-x-2 ${dragOver
                   ? "border-indigo-400 bg-indigo-50 text-indigo-500"
                   : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-              }`}
+                }`}
               style={{ marginLeft: "52px" }}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -313,9 +312,8 @@ export function CreateThreadModal({
               </svg>
               {charsLeft <= 50 && (
                 <span
-                  className={`absolute inset-0 flex items-center justify-center text-[9px] font-bold ${
-                    isOverLimit ? "text-red-500" : "text-amber-500"
-                  }`}
+                  className={`absolute inset-0 flex items-center justify-center text-[9px] font-bold ${isOverLimit ? "text-red-500" : "text-amber-500"
+                    }`}
                 >
                   {charsLeft}
                 </span>
@@ -325,11 +323,10 @@ export function CreateThreadModal({
             <button
               onClick={handleSubmit}
               disabled={isEmpty || isOverLimit || isBusy}
-              className={`flex items-center space-x-2 px-5 py-2 text-white text-[13px] font-bold rounded-full active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm ${
-                editMode
+              className={`flex items-center space-x-2 px-5 py-2 text-white text-[13px] font-bold rounded-full active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm ${editMode
                   ? "bg-indigo-600 hover:bg-indigo-700"
                   : "bg-slate-900 hover:bg-slate-800"
-              }`}
+                }`}
             >
               {isBusy ? (
                 <>

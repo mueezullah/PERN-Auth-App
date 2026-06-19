@@ -122,11 +122,11 @@ export function FeedCard({
             });
             const result = await response.json();
             if (result.success) {
-              handleSuccess(`${isCamp ? "Campaign" : "Post"} deleted successfully!`);
+              sessionStorage.setItem("pendingToast", isCamp ? "Campaign Deleted" : "Post Deleted");
               // Refresh list or trigger page reload to reflect changes
               window.location.reload();
             } else {
-              handleError(result.message || "Failed to delete.");
+              handleError(result.message || "Failed to Delete.");
             }
           } catch (error) {
             console.error("Delete action failed:", error);
