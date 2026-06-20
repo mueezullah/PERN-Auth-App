@@ -13,11 +13,13 @@ export const signupUser = async (name, email, password) => {
 
   // Default to 'user' role if undefined for some reason
   const role = newUser.role || "user";
+  const kyc_verified = newUser.kyc_verified || false;
 
   const jwtToken = generateToken({
     email: newUser.email,
     id: newUser.id,
     role,
+    kyc_verified,
   });
 
   // Determine redirection path based on role
@@ -33,6 +35,7 @@ export const signupUser = async (name, email, password) => {
       email: newUser.email,
       name: newUser.name,
       role,
+      kyc_verified,
       id: newUser.id,
       redirectTo,
     },
@@ -57,6 +60,7 @@ export const loginUser = async (email, password) => {
     email: user.email,
     id: user.id,
     role: user.role,
+    kyc_verified: user.kyc_verified,
   });
 
   // Determine redirection path based on role
@@ -77,6 +81,7 @@ export const loginUser = async (email, password) => {
       email,
       name: user.name,
       role: user.role,
+      kyc_verified: user.kyc_verified,
       id: user.id,
       redirectTo,
     },
@@ -91,3 +96,57 @@ export const fetchAllUsers = async () => {
     totalUsers: users.length,
   };
 };
+
+export const updateUserRole = async (userId, newRole) => {
+  const allowedRoles = ["user", "moderator", "fundraiser", "admin"];
+  if (!allowedRoles.includes(newRole)) {
+    return { success: false, status: 400, message: "Invalid role value" };
+  }
+
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return { success: false, status: 404, message: "User not found" };
+  }
+
+  if (newRole === "fundraiser" && !user.kyc_verified) {
+    return {
+      success: false,
+      status: 400,
+      message: "Only KYC verified users can be assigned the 'fundraiser' role",
+    };
+  }
+
+  const updatedUser = await UserModel.update(userId, null, null, newRole);
+  return {
+    success: true,
+    status: 200,
+    data: {
+      message: "Role updated successfully",
+      user: updatedUser,
+    },
+  };
+};
+
+export const toggleKycStatus = async (userId, kycVerified) => {
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return { success: false, status: 404, message: "User not found" };
+  }
+
+  let roleToUpdate = null;
+  // If user is being unverified and they are a fundraiser, demote them to user
+  if (!kycVerified && user.role === "fundraiser") {
+    roleToUpdate = "user";
+  }
+
+  const updatedUser = await UserModel.update(userId, null, null, roleToUpdate, kycVerified);
+  return {
+    success: true,
+    status: 200,
+    data: {
+      message: "KYC verification status updated successfully",
+      user: updatedUser,
+    },
+  };
+};
+
