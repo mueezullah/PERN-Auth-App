@@ -63,6 +63,8 @@ export function Navbar({
     localStorage.removeItem("token");
     localStorage.removeItem("loggedInUser");
     localStorage.removeItem("role");
+    localStorage.removeItem("name");
+    localStorage.removeItem("username");
     if (setIsAuthenticated) setIsAuthenticated(false);
     navigate("/");
   };
@@ -88,7 +90,7 @@ export function Navbar({
       icon: User,
       action: () => {
         setIsProfileDropdownOpen(false);
-        const username = localStorage.getItem("loggedInUser") || "WizardX";
+        const username = localStorage.getItem("username");
         navigate(`/user/${username}`);
       },
     },
@@ -197,8 +199,13 @@ export function Navbar({
           </button>
           <div className="relative hidden sm:block" ref={dropdownRef}>
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-slate-700">
-                {localStorage.getItem("loggedInUser") || "User"}
+              <span
+                onClick={() =>
+                  navigate(`/user/${localStorage.getItem("username")}`)
+                }
+                className="text-sm hover:underline cursor-pointer font-semibold text-slate-700"
+              >
+                {localStorage.getItem("name") || "User"}
               </span>
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}

@@ -73,6 +73,7 @@ export function Feed() {
     user: {
       id: campaign.user_id,
       name: campaign.owner_name || "Anonymous",
+      username: campaign.owner_username || "",
       avatar: "",
       role: "Fundraiser",
       time: getTimeAgo(campaign.created_at),
@@ -99,6 +100,7 @@ export function Feed() {
     user: {
       id: thread.user_id,
       name: thread.author_name || "Anonymous",
+      username: thread.author_username || "",
       avatar: "",
       role: thread.author_role || "user",
       time: getTimeAgo(thread.created_at),
@@ -128,13 +130,13 @@ export function Feed() {
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-5 mb-8">
         <div className="flex items-center space-x-4 mb-4">
           <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            {localStorage.getItem("loggedInUser")?.charAt(0)?.toUpperCase() || "U"}
+            {localStorage.getItem("name")?.charAt(0)?.toUpperCase() || "U"}
           </div>
           <button
             onClick={handlePostClick}
-            className="flex-1 text-left text-slate-400 font-medium text-[15px] hover:text-slate-600 transition-colors"
+            className="flex-1 cursor-text text-left text-slate-400 font-medium text-[15px] hover:text-slate-600 transition-colors"
           >
-            What's on your mind, {localStorage.getItem("loggedInUser") || "there"}?
+            What's on your mind, {localStorage.getItem("name") || "there"}?
           </button>
         </div>
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
@@ -142,7 +144,7 @@ export function Feed() {
             {/* Post / Thread button */}
             <button
               onClick={handlePostClick}
-              className="flex items-center space-x-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors"
+              className="flex items-center cursor-pointer space-x-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors"
             >
               <Edit3 className="w-4 h-4" />
               <span className="text-[13px] font-semibold">Post Something</span>
@@ -151,7 +153,7 @@ export function Feed() {
             {/* Campaign button — role-aware */}
             <button
               onClick={handleCampaignClick}
-              className="flex items-center space-x-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors"
+              className="flex items-center cursor-pointer space-x-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors"
             >
               <Megaphone className="w-4 h-4" />
               <span className="text-[13px] font-semibold">Raise Campaign</span>
@@ -176,7 +178,7 @@ export function Feed() {
           // so mapThreadToPost can transform it correctly alongside fetched posts
           prependPost({
             ...newPost,
-            author_name: localStorage.getItem("loggedInUser") || "Unknown",
+            author_name: localStorage.getItem("name") || "Unknown",
             author_role: localStorage.getItem("role") || "user",
           });
         }}

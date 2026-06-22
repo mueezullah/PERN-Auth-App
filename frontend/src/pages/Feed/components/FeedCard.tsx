@@ -25,6 +25,7 @@ interface FeedCardProps {
   user: {
     id?: string | number;
     name: string;
+    username?: string;
     avatar: string;
     role: string;
     time: string;
@@ -194,7 +195,7 @@ export function FeedCard({
               )}
             </div>
             <p className="text-[13px] text-slate-500 font-medium">
-              {user.role} • {user.time}
+              {user.username ? `@${user.username}` : user.role} • {user.time}
             </p>
           </div>
         </div>

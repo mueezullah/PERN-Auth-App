@@ -2,22 +2,28 @@ import * as UserModel from "../users/user.model.js";
 import { hashPassword, comparePassword } from "../../utils/hash.js";
 import { generateToken } from "../../utils/jwt.js";
 
-export const signupUser = async (name, email, password) => {
-  const existingUser = await UserModel.findByEmail(email);
-  if (existingUser) {
-    return { success: false, status: 409, message: "User already exists" };
+export const signupUser = async (name, username, email, password) => {
+  const existingUserEmail = await UserModel.findByEmail(email);
+  if (existingUserEmail) {
+    return { success: false, status: 409, message: "Email already exists" };
+  }
+  const existingUsername = await UserModel.findByUsername(username);
+  if (existingUsername) {
+    return { success: false, status: 409, message: "Username is already taken" };
   }
 
   const hashedPassword = await hashPassword(password);
-  const newUser = await UserModel.create(name, email, hashedPassword);
+  const newUser = await UserModel.create(name, username, email, hashedPassword);
 
   // Default to 'user' role if undefined for some reason
   const role = newUser.role || "user";
+  const kyc_verified = newUser.kyc_verified || false;
 
   const jwtToken = generateToken({
     email: newUser.email,
     id: newUser.id,
     role,
+    kyc_verified,
   });
 
   // Determine redirection path based on role
@@ -32,7 +38,9 @@ export const signupUser = async (name, email, password) => {
       jwtToken,
       email: newUser.email,
       name: newUser.name,
+      username: newUser.username,
       role,
+      kyc_verified,
       id: newUser.id,
       redirectTo,
     },
@@ -57,6 +65,7 @@ export const loginUser = async (email, password) => {
     email: user.email,
     id: user.id,
     role: user.role,
+    kyc_verified: user.kyc_verified,
   });
 
   // Determine redirection path based on role
@@ -76,7 +85,9 @@ export const loginUser = async (email, password) => {
       jwtToken,
       email,
       name: user.name,
+      username: user.username,
       role: user.role,
+      kyc_verified: user.kyc_verified,
       id: user.id,
       redirectTo,
     },
@@ -91,3 +102,57 @@ export const fetchAllUsers = async () => {
     totalUsers: users.length,
   };
 };
+
+export const updateUserRole = async (userId, newRole) => {
+  const allowedRoles = ["user", "moderator", "fundraiser", "admin"];
+  if (!allowedRoles.includes(newRole)) {
+    return { success: false, status: 400, message: "Invalid role value" };
+  }
+
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return { success: false, status: 404, message: "User not found" };
+  }
+
+  if (newRole === "fundraiser" && !user.kyc_verified) {
+    return {
+      success: false,
+      status: 400,
+      message: "Only KYC verified users can be assigned the 'fundraiser' role",
+    };
+  }
+
+  const updatedUser = await UserModel.update(userId, { role: newRole });
+  return {
+    success: true,
+    status: 200,
+    data: {
+      message: "Role updated successfully",
+      user: updatedUser,
+    },
+  };
+};
+
+export const toggleKycStatus = async (userId, kycVerified) => {
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return { success: false, status: 404, message: "User not found" };
+  }
+
+  let roleToUpdate = null;
+  // If user is being unverified and they are a fundraiser, demote them to user
+  if (!kycVerified && user.role === "fundraiser") {
+    roleToUpdate = "user";
+  }
+
+  const updatedUser = await UserModel.update(userId, { role: roleToUpdate, kyc_verified: kycVerified });
+  return {
+    success: true,
+    status: 200,
+    data: {
+      message: "KYC verification status updated successfully",
+      user: updatedUser,
+    },
+  };
+};
+

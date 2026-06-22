@@ -13,6 +13,7 @@ import {
   Home,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { handleSuccess, handleError } from "../../utils";
 
 // Avatar background color based on index
 const avatarColors = [
@@ -68,7 +69,9 @@ const AccordionItem = ({
       ? "bg-purple-100 text-purple-800"
       : roleName === "moderator"
         ? "bg-yellow-100 text-yellow-800"
-        : "bg-green-100 text-green-800";
+        : roleName === "fundraiser"
+          ? "bg-orange-100 text-orange-800"
+          : "bg-green-100 text-green-800";
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden mb-3">
@@ -139,6 +142,9 @@ const AccordionItem = ({
                       Role
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      KYC Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Change Role
                     </th>
                   </tr>
@@ -172,6 +178,17 @@ const AccordionItem = ({
                             user.role.slice(1)}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            user.kyc_verified
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {user.kyc_verified ? "Verified" : "Unverified"}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center relative w-full max-w-45">
                           <Shield className="h-4 w-4 text-gray-400 absolute left-2 pointer-events-none" />
@@ -184,6 +201,7 @@ const AccordionItem = ({
                           >
                             <option value="user">User</option>
                             <option value="moderator">Moderator</option>
+                            <option value="fundraiser">Fundraiser</option>
                             <option value="admin">Admin</option>
                           </select>
                         </div>
@@ -228,14 +246,52 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
   };
 
   // Handle Role Change functionality
-  const handleRoleChange = (userId, newRole) => {
+  const handleRoleChange = async (userId, newRole) => {
     console.log(`Changing user ${userId} to role: ${newRole}`);
+    const token = localStorage.getItem("token");
+    const originalUsers = [...users];
+
+    // Optimistically update the UI role
     setUsers((prevUsers) =>
       prevUsers.map((user) =>
-        user.id === userId ? { ...user, role: newRole } : user,
-      ),
+        user.id === userId ? { ...user, role: newRole } : user
+      )
     );
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_API_URL}/auth/users/${userId}/role`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token,
+          },
+          body: JSON.stringify({ role: newRole }),
+        }
+      );
+      const data = await response.json();
+      if (response.ok) {
+        handleSuccess(data.message || "Role updated successfully");
+        if (data.user) {
+          setUsers((prevUsers) =>
+            prevUsers.map((user) =>
+              user.id === userId ? { ...user, ...data.user } : user
+            )
+          );
+        }
+      } else {
+        handleError(data.message || "Failed to update role");
+        setUsers(originalUsers);
+      }
+    } catch (err) {
+      console.error(err);
+      handleError("Failed to connect to server");
+      setUsers(originalUsers);
+    }
   };
+
+
 
   const loggedInUser = localStorage.getItem("loggedInUser");
 
@@ -299,6 +355,11 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
       key: "moderator",
       label: "Moderators",
       badgeClass: "bg-yellow-100 text-yellow-800",
+    },
+    {
+      key: "fundraiser",
+      label: "Fundraisers",
+      badgeClass: "bg-orange-100 text-orange-800",
     },
     {
       key: "admin",
@@ -521,6 +582,9 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                           Role
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          KYC Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Change Role
                         </th>
                       </tr>
@@ -529,7 +593,7 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                       {loading ? (
                         <tr>
                           <td
-                            colSpan="4"
+                            colSpan="5"
                             className="px-6 py-10 text-center text-gray-500"
                           >
                             <div className="flex justify-center items-center">
@@ -559,7 +623,7 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                       ) : error ? (
                         <tr>
                           <td
-                            colSpan="4"
+                            colSpan="5"
                             className="px-6 py-10 text-center text-red-500"
                           >
                             {error}
@@ -568,7 +632,7 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                       ) : filteredUsers.length === 0 ? (
                         <tr>
                           <td
-                            colSpan="4"
+                            colSpan="5"
                             className="px-6 py-10 text-center text-gray-400 text-sm"
                           >
                             No {selectedRole}s found.
@@ -603,6 +667,17 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                                   user.role.slice(1)}
                               </span>
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  user.kyc_verified
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {user.kyc_verified ? "Verified" : "Unverified"}
+                              </span>
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <div className="flex items-center relative w-full max-w-45">
                                 <Shield className="h-4 w-4 text-gray-400 absolute left-2 pointer-events-none" />
@@ -615,6 +690,7 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
                                 >
                                   <option value="user">User</option>
                                   <option value="moderator">Moderator</option>
+                                  <option value="fundraiser">Fundraiser</option>
                                   <option value="admin">Admin</option>
                                 </select>
                               </div>

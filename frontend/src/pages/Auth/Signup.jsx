@@ -7,6 +7,7 @@ import ScrollLock from "../../components/ScrollLock";
 const Signup = () => {
   const [signupInfo, setSignupInfo] = useState({
     name: "",
+    username: "",
     email: "",
     password: "",
   });
@@ -24,8 +25,8 @@ const Signup = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
 
-    const { name, email, password } = signupInfo;
-    if (!name || !email || !password) {
+    const { name, username, email, password } = signupInfo;
+    if (!name || !username || !email || !password) {
       return handleError("All fields required");
     }
     try {
@@ -39,11 +40,12 @@ const Signup = () => {
       });
 
       const result = await response.json();
-      const { success, message, error, jwtToken, role, name, id, redirectTo } =
+      const { success, message, error, jwtToken, role, name: returnedName, username: returnedUsername, id, redirectTo } =
         result;
 
       if (success) {
-        localStorage.setItem("loggedInUser", name);
+        localStorage.setItem("name", returnedName);
+        localStorage.setItem("username", returnedUsername);
         localStorage.setItem("token", jwtToken);
         localStorage.setItem("role", role);
         localStorage.setItem("userId", String(id));
@@ -82,6 +84,19 @@ const Signup = () => {
               autoFocus
               placeholder="Enter Name"
               value={signupInfo.name}
+              className="w-full text-xl p-2.5 border-0 outline-none border-b border-black placeholder:text-xs placeholder:italic"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="username" className="text-xl">
+              Username
+            </label>
+            <input
+              onChange={handleChange}
+              type="text"
+              name="username"
+              placeholder="Enter Unique Username"
+              value={signupInfo.username}
               className="w-full text-xl p-2.5 border-0 outline-none border-b border-black placeholder:text-xs placeholder:italic"
             />
           </div>

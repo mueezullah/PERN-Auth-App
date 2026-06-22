@@ -43,7 +43,7 @@ export function CreateThreadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const username = localStorage.getItem("loggedInUser") || "User";
+  const username = localStorage.getItem("name") || "User";
   const charsLeft = MAX_CHARS - message.length;
   const isOverLimit = charsLeft < 0;
   const isEmpty = message.trim().length === 0 && !mediaFile;

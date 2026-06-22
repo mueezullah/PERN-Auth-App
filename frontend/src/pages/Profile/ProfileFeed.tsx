@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Eye, ChevronRight, Plus, SlidersHorizontal, Image as ImageIcon, CircleDollarSign } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export function ProfileFeed({ username }: { username?: string }) {
+export function ProfileFeed({ name, username }: { name?: string; username?: string }) {
   const [activeTab, setActiveTab] = useState('Posts');
   const tabs = ['Campaigns', 'Donations', 'Updates', 'Saved', 'About'];
-  const displayUsername = username || 'WizardX';
+  const displayName = name || username || 'WizardX';
+  const displayUsername = username || '';
 
   return (
     <div className="w-full max-w-[700px] mx-auto py-8 flex flex-col">
@@ -21,8 +22,10 @@ export function ProfileFeed({ username }: { username?: string }) {
           </div>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 leading-tight">{displayUsername}</h1>
-          <p className="text-[14px] text-slate-500 font-medium">u/{username}</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 leading-tight">{displayName}</h1>
+          {displayUsername && (
+            <p className="text-[14px] text-slate-500 font-medium mt-0.5">u/{displayUsername}</p>
+          )}
         </div>
       </div>
 
@@ -72,10 +75,10 @@ export function ProfileFeed({ username }: { username?: string }) {
         <div className="relative w-32 h-32 mb-6 opacity-80 flex flex-col items-center justify-center">
           <div className="absolute inset-0 bg-indigo-100 rounded-full scale-90" />
           <div className="absolute inset-0 bg-indigo-50 rounded-full flex items-center justify-center relative">
-             <CircleDollarSign className="w-12 h-12 text-indigo-400" strokeWidth={1.5} />
+            <CircleDollarSign className="w-12 h-12 text-indigo-400" strokeWidth={1.5} />
           </div>
         </div>
-        
+
         <h2 className="text-[22px] font-bold text-slate-900 mb-2">No activity yet</h2>
         <p className="text-[15px] text-slate-500 max-w-md">
           Once you create a campaign or make a donation, it'll show up here.
