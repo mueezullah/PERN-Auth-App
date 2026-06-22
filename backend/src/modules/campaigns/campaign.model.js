@@ -41,7 +41,7 @@ export const create = async (userId, title, description, goalAmount, deadline, m
 
 export const findAllActive = async (limit, offset, status = 'active') => {
   let query = `
-      SELECT c.*, u.name as owner_name 
+      SELECT c.*, u.name as owner_name, u.username as owner_username 
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
     `;
@@ -76,7 +76,7 @@ export const findAllActive = async (limit, offset, status = 'active') => {
 
 export const findById = async (id) => {
   const query = `
-      SELECT c.*, u.name as owner_name, u.email as owner_email
+      SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
       WHERE c.id = $1 AND c.status != 'deleted';

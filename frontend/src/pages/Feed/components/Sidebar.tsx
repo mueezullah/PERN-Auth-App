@@ -25,7 +25,7 @@ export function Sidebar( {onMobileClose}: {onMobileClose?: () => void}) {
     { name: "Communities", icon: Users, path: "/communities" },
     { name: "My Campaigns", icon: Megaphone, path: "/my-campaigns" },
     { name: "Notifications", icon: Bell, path: "/notifications" },
-    { name: "Profile", icon: User, path: `/user/${localStorage.getItem('loggedInUser')}` },
+    { name: "Profile", icon: User, path: `/user/${localStorage.getItem('username')}` },
   ];
 
  return (

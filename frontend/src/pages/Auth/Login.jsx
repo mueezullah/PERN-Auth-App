@@ -41,14 +41,12 @@ const Login = () => {
       const { success, message, jwtToken, name, error, role, id, redirectTo } =
         result;
       if (success) {
-        handleSuccess(message);
         localStorage.setItem("token", jwtToken);
         localStorage.setItem("loggedInUser", name);
         localStorage.setItem("role", role);
         localStorage.setItem("userId", String(id));
-        setTimeout(() => {
-          navigate(redirectTo);
-        }, 1000);
+        sessionStorage.setItem("pendingToast", `Authenticated as ${name}`);
+        navigate(redirectTo);
       } else if (error) {
         handleError(error);
       } else if (!success) {

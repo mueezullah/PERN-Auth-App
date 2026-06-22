@@ -2,14 +2,18 @@ import * as UserModel from "../users/user.model.js";
 import { hashPassword, comparePassword } from "../../utils/hash.js";
 import { generateToken } from "../../utils/jwt.js";
 
-export const signupUser = async (name, email, password) => {
-  const existingUser = await UserModel.findByEmail(email);
-  if (existingUser) {
-    return { success: false, status: 409, message: "User already exists" };
+export const signupUser = async (name, username, email, password) => {
+  const existingUserEmail = await UserModel.findByEmail(email);
+  if (existingUserEmail) {
+    return { success: false, status: 409, message: "Email already exists" };
+  }
+  const existingUsername = await UserModel.findByUsername(username);
+  if (existingUsername) {
+    return { success: false, status: 409, message: "Username is already taken" };
   }
 
   const hashedPassword = await hashPassword(password);
-  const newUser = await UserModel.create(name, email, hashedPassword);
+  const newUser = await UserModel.create(name, username, email, hashedPassword);
 
   // Default to 'user' role if undefined for some reason
   const role = newUser.role || "user";
@@ -34,6 +38,7 @@ export const signupUser = async (name, email, password) => {
       jwtToken,
       email: newUser.email,
       name: newUser.name,
+      username: newUser.username,
       role,
       kyc_verified,
       id: newUser.id,
@@ -80,6 +85,7 @@ export const loginUser = async (email, password) => {
       jwtToken,
       email,
       name: user.name,
+      username: user.username,
       role: user.role,
       kyc_verified: user.kyc_verified,
       id: user.id,
@@ -116,7 +122,7 @@ export const updateUserRole = async (userId, newRole) => {
     };
   }
 
-  const updatedUser = await UserModel.update(userId, null, null, newRole);
+  const updatedUser = await UserModel.update(userId, { role: newRole });
   return {
     success: true,
     status: 200,
@@ -139,7 +145,7 @@ export const toggleKycStatus = async (userId, kycVerified) => {
     roleToUpdate = "user";
   }
 
-  const updatedUser = await UserModel.update(userId, null, null, roleToUpdate, kycVerified);
+  const updatedUser = await UserModel.update(userId, { role: roleToUpdate, kyc_verified: kycVerified });
   return {
     success: true,
     status: 200,

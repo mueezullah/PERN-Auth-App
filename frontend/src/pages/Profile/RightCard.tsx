@@ -1,8 +1,8 @@
 import React from 'react';
 import { Share, Image as ImageIcon, Plus, Edit } from 'lucide-react';
 
-export function ProfileRightSidebar({ username }: { username?: string }) {
-  const displayUsername = username || 'WizardX';
+export function ProfileRightSidebar({ name }: { name?: string }) {
+  const displayUsername = name || 'WizardX';
 
   return (
     <div className="w-full py-8 pr-4 flex flex-col space-y-4">

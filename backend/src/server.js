@@ -6,7 +6,6 @@ const startServer = async () => {
   try {
     // Confirm table setups exist locally before opening socket connections
     await initializeDatabaseSchema();
-    
     app.listen(env.PORT, () => {
       console.log(`📡 Server running locally on port ${env.PORT}`);
     });
