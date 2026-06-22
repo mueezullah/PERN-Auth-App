@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { handleError, handleSuccess } from "../../utils";
+import { handleError } from "../../utils";
 import ScrollLock from "../../components/ScrollLock";
 
 const Login = () => {
@@ -14,7 +14,6 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(name, value);
     const copyLogiInfo = { ...loginInfo }; // <-- shallow copy of the state object to avoid mutating the original state directly
     copyLogiInfo[name] = value;
     setLoinInfo(copyLogiInfo);
