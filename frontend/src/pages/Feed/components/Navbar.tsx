@@ -205,7 +205,7 @@ export function Navbar({
                 }
                 className="text-sm hover:underline cursor-pointer font-semibold text-slate-700"
               >
-                {localStorage.getItem("name") || "User"}
+                {localStorage.getItem("loggedInUser") || "User"}
               </span>
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}

@@ -4,9 +4,9 @@ import { clsx } from 'clsx';
 
 export function ProfileFeed({ name, username }: { name?: string; username?: string }) {
   const [activeTab, setActiveTab] = useState('Posts');
-  const tabs = ['Campaigns', 'Donations', 'Updates', 'Saved', 'About'];
-  const displayName = name || username || 'WizardX';
-  const displayUsername = username || '';
+  const tabs = ['Posts', 'Campaigns', 'Donations', 'Saved', 'About'];
+  const displayName = name;
+  const displayUsername = username;
 
   return (
     <div className="w-full max-w-[700px] mx-auto py-8 flex flex-col">

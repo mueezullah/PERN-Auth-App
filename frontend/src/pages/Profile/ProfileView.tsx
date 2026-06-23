@@ -4,9 +4,10 @@ import { ProfileRightSidebar } from "./RightCard";
 import { useParams } from "react-router";
 
 export function ProfileView() {
-  const { username } = useParams<{ username: string }>();
+  const { username: paramUsername } = useParams<{ username: string }>();
   // name is fetched from localStorage for the current user's own profile
-  const name = localStorage.getItem("name") || username || "User";
+  const name = localStorage.getItem("loggedInUser") || paramUsername || "User";
+  const username = localStorage.getItem("username") || paramUsername;
 
   return (
     <div className="w-full max-w-[1100px] mx-auto flex gap-8">
