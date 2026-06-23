@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import { handleError, handleSuccess } from "../../utils";
+import { handleError } from "../../utils";
 import { useCreateCampaign } from "../../features/creator/creatorSlice";
 import * as creatorAPI from "../../features/creator/creatorAPI";
 import { X, Megaphone, Image as ImageIcon, CalendarDays, DollarSign, FileText, Pencil, Save } from "lucide-react";
@@ -118,14 +118,12 @@ const CreateCampaignModal = ({
         setUpdateLoading(true);
         const updated = await creatorAPI.updateCampaign(editCampaignId, payload);
         showMinimalToast("Campaign Updated");
-        // handleSuccess("Campaign updated successfully!");
         if (onSuccess) onSuccess(updated);
         if (onClose) onClose();
       } else {
         // --- CREATE ---
         await create(payload);
         showMinimalToast("Campaign Created");
-        // handleSuccess("Campaign created successfully!");
         setTimeout(() => navigate("/feed"), 1000);
       }
     } catch (err) {

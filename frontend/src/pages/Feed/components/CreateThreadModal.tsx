@@ -3,7 +3,7 @@ import { X, Image as ImageIcon, Film, Smile, Send, Loader2, AtSign, Pencil } fro
 import { showMinimalToast } from "../../../components/MinimalToast";
 import { useCreatePost } from "../../../features/Posts/postsSlice";
 import * as postsAPI from "../../../features/Posts/postsAPI";
-import { handleSuccess, handleError } from "../../../utils";
+import { handleError } from "../../../utils";
 
 interface CreateThreadModalProps {
   isOpen: boolean;

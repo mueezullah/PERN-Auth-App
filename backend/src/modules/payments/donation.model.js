@@ -15,6 +15,8 @@ export const initTable = async () => {
     CREATE INDEX IF NOT EXISTS idx_donations_campaign_id ON donations(campaign_id);
     CREATE INDEX IF NOT EXISTS idx_donations_donor_id ON donations(donor_id);
     CREATE INDEX IF NOT EXISTS idx_donations_status ON donations(status);
+    CREATE INDEX IF NOT EXISTS idx_donations_pending_cleanup ON donations(status, created_at)
+      WHERE status = 'pending';
   `;
   try {
     await pool.query(query);
