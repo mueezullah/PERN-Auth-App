@@ -88,11 +88,43 @@ export const create = async (name, username, email, password) => {
   return result.rows[0];
 };
 
-export const findByUsername = async(username) => {
+export const findByUsername = async (username) => {
   const query = "SELECT * FROM users WHERE username = $1";
   const result = await pool.query(query, [username]);
   return result.rows[0] || null;
-}
+};
+
+export const getPostCountByUserId = async (userId) => {
+  const query = "SELECT COUNT(*) AS count FROM posts WHERE user_id = $1 AND status = 'active'";
+  const result = await pool.query(query, [userId]);
+  return parseInt(result.rows[0].count, 10) || 0;
+};
+
+export const getCampaignCountByUserId = async (userId) => {
+  const query = "SELECT COUNT(*) AS count FROM campaigns WHERE user_id = $1";
+  const result = await pool.query(query, [userId]);
+  return parseInt(result.rows[0].count, 10) || 0;
+};
+
+export const getBackedProjectsCountByUserId = async (userId) => {
+  const query = `
+    SELECT COUNT(DISTINCT campaign_id) AS count
+    FROM donations
+    WHERE donor_id = $1 AND status = 'completed'
+  `;
+  const result = await pool.query(query, [userId]);
+  return parseInt(result.rows[0].count, 10) || 0;
+};
+
+export const getTotalContributedByUserId = async (userId) => {
+  const query = `
+    SELECT COALESCE(SUM(amount), 0) AS total
+    FROM donations
+    WHERE donor_id = $1 AND status = 'completed'
+  `;
+  const result = await pool.query(query, [userId]);
+  return parseFloat(result.rows[0].total) || 0;
+};
 
 // READ - Find user by email (for sign-in)
 export const findByEmail = async (email) => {
@@ -103,20 +135,31 @@ export const findByEmail = async (email) => {
 
 // READ - Find user by ID
 export const findById = async (id) => {
-  const query = "SELECT id, name, username, email, role, kyc_verified, created_at FROM users WHERE id = $1"; // Added role back to selection
+  const query =
+    "SELECT id, name, username, email, role, kyc_verified, created_at FROM users WHERE id = $1"; // Added role back to selection
   const result = await pool.query(query, [id]);
   return result.rows[0] || null;
 };
 
 // READ - Get all users
 export const findAll = async () => {
-  const query = "SELECT id, name, username, email, role, kyc_verified, created_at FROM users ORDER BY created_at DESC";
+  const query =
+    "SELECT id, name, username, email, role, kyc_verified, created_at FROM users ORDER BY created_at DESC";
   const result = await pool.query(query);
   return result.rows;
 };
 
 // UPDATE - Update user details dynamically using COALESCE
-export const update = async (id, { name = null, username = null, email = null, role = null, kyc_verified = null } = {}) => {
+export const update = async (
+  id,
+  {
+    name = null,
+    username = null,
+    email = null,
+    role = null,
+    kyc_verified = null,
+  } = {},
+) => {
   const query = `
     UPDATE users 
     SET name = COALESCE($1, name), 
@@ -127,7 +170,14 @@ export const update = async (id, { name = null, username = null, email = null, r
     WHERE id = $6 
     RETURNING id, name, username, email, role, kyc_verified, created_at;
   `;
-  const result = await pool.query(query, [name, username, email, role, kyc_verified, id]);
+  const result = await pool.query(query, [
+    name,
+    username,
+    email,
+    role,
+    kyc_verified,
+    id,
+  ]);
   return result.rows[0] || null;
 };
 
