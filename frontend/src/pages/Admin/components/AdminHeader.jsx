@@ -3,7 +3,7 @@ import { Menu, Home, LogOut } from "lucide-react";
 
 const AdminHeader = ({
   activeView,
-  loggedInUser,
+  name,
   handleFeedClick,
   handleLogout,
   setSidebarOpen,
@@ -30,7 +30,7 @@ const AdminHeader = ({
         </div>
         <div className="flex items-center gap-3">
           <span className="mr-4 text-sm text-gray-600">
-            Admin, {loggedInUser}
+            Admin, {name}
           </span>
           <button
             onClick={handleFeedClick}

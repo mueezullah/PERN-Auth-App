@@ -1,5 +1,14 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { X, Image as ImageIcon, Film, Smile, Send, Loader2, AtSign, Pencil } from "lucide-react";
+import {
+  X,
+  Image as ImageIcon,
+  Film,
+  Smile,
+  Send,
+  Loader2,
+  AtSign,
+  Pencil,
+} from "lucide-react";
 import { showMinimalToast } from "../../../components/MinimalToast";
 import { useCreatePost } from "../../../features/Posts/postsSlice";
 import * as postsAPI from "../../../features/Posts/postsAPI";
@@ -29,10 +38,10 @@ export function CreateThreadModal({
   const [message, setMessage] = useState(editMode ? initialContent : "");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(
-    editMode && initialImage ? initialImage : null
+    editMode && initialImage ? initialImage : null,
   );
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(
-    editMode && initialImage ? "image" : null
+    editMode && initialImage ? "image" : null,
   );
   const [dragOver, setDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,7 +52,7 @@ export function CreateThreadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const username = localStorage.getItem("name") || "User";
+  const name = localStorage.getItem("name") ?? "";
   const charsLeft = MAX_CHARS - message.length;
   const isOverLimit = charsLeft < 0;
   const isEmpty = message.trim().length === 0 && !mediaFile;
@@ -154,11 +163,11 @@ export function CreateThreadModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4"
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full max-w-[560px] bg-white rounded-3xl shadow-2xl border border-slate-200/60 overflow-hidden animate-in"
+        className="w-full max-w-140 bg-white rounded-3xl shadow-2xl border border-slate-200/60 overflow-hidden animate-in"
         style={{ animation: "slideUp 0.2s ease-out" }}
       >
         {/* Header */}
@@ -185,11 +194,13 @@ export function CreateThreadModal({
         <div className="px-5 pt-4 pb-2">
           {/* User Row */}
           <div className="flex items-start space-x-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              {username.charAt(0).toUpperCase()}
+            <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              {name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1">
-              <p className="text-[13px] font-bold text-slate-900 mb-2">{username}</p>
+              <p className="text-[13px] font-bold text-slate-900 mb-2">
+                {name}
+              </p>
               {/* Textarea */}
               <textarea
                 ref={textareaRef}
@@ -213,7 +224,10 @@ export function CreateThreadModal({
 
           {/* Media Preview */}
           {mediaPreview && (
-            <div className="relative ml-13 mb-4 rounded-2xl overflow-hidden border border-slate-200/60 bg-slate-50 group" style={{ marginLeft: "52px" }}>
+            <div
+              className="relative ml-13 mb-4 rounded-2xl overflow-hidden border border-slate-200/60 bg-slate-50 group"
+              style={{ marginLeft: "52px" }}
+            >
               {mediaType === "image" ? (
                 <img
                   src={mediaPreview}
@@ -245,10 +259,11 @@ export function CreateThreadModal({
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              className={`ml-13 mb-4 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center py-5 text-slate-400 text-[13px] font-medium space-x-2 ${dragOver
+              className={`ml-13 mb-4 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex items-center justify-center py-5 text-slate-400 text-[13px] font-medium space-x-2 ${
+                dragOver
                   ? "border-indigo-400 bg-indigo-50 text-indigo-500"
                   : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                }`}
+              }`}
               style={{ marginLeft: "52px" }}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -298,13 +313,26 @@ export function CreateThreadModal({
             {/* Char counter ring */}
             <div className="relative w-6 h-6">
               <svg className="w-6 h-6 -rotate-90" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" fill="none" stroke="#e2e8f0" strokeWidth="2.5" />
                 <circle
                   cx="12"
                   cy="12"
                   r="9"
                   fill="none"
-                  stroke={isOverLimit ? "#ef4444" : charsLeft < 50 ? "#f59e0b" : "#6366f1"}
+                  stroke="#e2e8f0"
+                  strokeWidth="2.5"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  fill="none"
+                  stroke={
+                    isOverLimit
+                      ? "#ef4444"
+                      : charsLeft < 50
+                        ? "#f59e0b"
+                        : "#6366f1"
+                  }
                   strokeWidth="2.5"
                   strokeDasharray={`${Math.max(0, Math.min(56.5, (message.length / MAX_CHARS) * 56.5))} 56.5`}
                   strokeLinecap="round"
@@ -312,8 +340,9 @@ export function CreateThreadModal({
               </svg>
               {charsLeft <= 50 && (
                 <span
-                  className={`absolute inset-0 flex items-center justify-center text-[9px] font-bold ${isOverLimit ? "text-red-500" : "text-amber-500"
-                    }`}
+                  className={`absolute inset-0 flex items-center justify-center text-[9px] font-bold ${
+                    isOverLimit ? "text-red-500" : "text-amber-500"
+                  }`}
                 >
                   {charsLeft}
                 </span>
@@ -323,10 +352,11 @@ export function CreateThreadModal({
             <button
               onClick={handleSubmit}
               disabled={isEmpty || isOverLimit || isBusy}
-              className={`flex items-center space-x-2 px-5 py-2 text-white text-[13px] font-bold rounded-full active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm ${editMode
+              className={`flex items-center space-x-2 px-5 py-2 text-white text-[13px] font-bold rounded-full active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm ${
+                editMode
                   ? "bg-indigo-600 hover:bg-indigo-700"
                   : "bg-slate-900 hover:bg-slate-800"
-                }`}
+              }`}
             >
               {isBusy ? (
                 <>

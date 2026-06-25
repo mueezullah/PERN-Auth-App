@@ -4,12 +4,12 @@ import { clsx } from 'clsx';
 
 export function ProfileFeed({ name, username }: { name?: string; username?: string }) {
   const [activeTab, setActiveTab] = useState('Posts');
-  const tabs = ['Campaigns', 'Donations', 'Updates', 'Saved', 'About'];
-  const displayName = name || username || 'WizardX';
-  const displayUsername = username || '';
+  const tabs = ['Posts', 'Campaigns', 'Donations', 'Saved', 'About'];
+  const displayName = name;
+  const displayUsername = username;
 
   return (
-    <div className="w-full max-w-[700px] mx-auto py-8 flex flex-col">
+    <div className="w-full max-w-175 mx-auto py-8 flex flex-col">
       {/* Header Info */}
       <div className="flex items-center space-x-4 mb-6 px-4">
         <div className="relative">
@@ -74,7 +74,7 @@ export function ProfileFeed({ name, username }: { name?: string; username?: stri
         {/* Abstract Funding Avatar Placeholder for empty state */}
         <div className="relative w-32 h-32 mb-6 opacity-80 flex flex-col items-center justify-center">
           <div className="absolute inset-0 bg-indigo-100 rounded-full scale-90" />
-          <div className="absolute inset-0 bg-indigo-50 rounded-full flex items-center justify-center relative">
+          <div className="absolute inset-0 bg-indigo-50 rounded-full flex items-center justify-center">
             <CircleDollarSign className="w-12 h-12 text-indigo-400" strokeWidth={1.5} />
           </div>
         </div>

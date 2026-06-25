@@ -37,13 +37,14 @@ const Login = () => {
       });
 
       const result = await response.json();
-      const { success, message, jwtToken, name, error, role, id, redirectTo } =
+      const { success, message, jwtToken, name, username, error, role, id, redirectTo } =
         result;
       if (success) {
         localStorage.setItem("token", jwtToken);
-        localStorage.setItem("loggedInUser", name);
+        localStorage.setItem("name", name);
         localStorage.setItem("role", role);
         localStorage.setItem("userId", String(id));
+        localStorage.setItem("username", username);
         sessionStorage.setItem("pendingToast", `Authenticated as ${name}`);
         navigate(redirectTo);
       } else if (error) {

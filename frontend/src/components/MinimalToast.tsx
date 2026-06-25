@@ -77,7 +77,7 @@ export default function MinimalToast() {
 
   return (
     <div
-      className={`fixed top-6 left-1/2 -translate-x-1/2 z-[999] pointer-events-none transition-all duration-500 ease-out ${isVisible
+      className={`fixed top-6 left-1/2 -translate-x-1/2 z-999 pointer-events-none transition-all duration-500 ease-out ${isVisible
           ? "translate-y-0 opacity-100 scale-100"
           : "-translate-y-6 opacity-0 scale-95"
         }`}

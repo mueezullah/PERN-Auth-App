@@ -1,24 +1,32 @@
-import React, {
-  useState,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FeedCard } from "./FeedCard";
 import { CreateThreadModal } from "./CreateThreadModal";
 import CreateCampaignModal from "../../../pages/CreatorDashboard/CreateCampaignModal";
 import { Sparkles, Edit3, Megaphone } from "lucide-react";
 import { useCampaigns } from "../../../features/creator/creatorSlice";
-import { usePosts } from '../../../features/Posts/postsSlice';
+import { usePosts } from "../../../features/Posts/postsSlice";
 
 export function Feed() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<any | null>(null);
-  const { campaigns, pagination, loading, error, refetch: refetchCampaigns } = useCampaigns(page, 10, "all");
+  const {
+    campaigns,
+    pagination,
+    loading,
+    error,
+    refetch: refetchCampaigns,
+  } = useCampaigns(page, 10, "all");
 
-  const { posts, loading: postsLoading, error: postsError, prependPost, refetch: refetchPosts } = usePosts(page, 10);
+  const {
+    posts,
+    loading: postsLoading,
+    error: postsError,
+    prependPost,
+    refetch: refetchPosts,
+  } = usePosts(page, 10);
 
   const role = localStorage.getItem("role");
 
@@ -46,7 +54,9 @@ export function Feed() {
   }, [refetchCampaigns, refetchPosts]);
 
   const observer = useRef<IntersectionObserver | null>(null);
-  const hasMore = pagination ? (pagination as any).currentPage < (pagination as any).totalPages : true;
+  const hasMore = pagination
+    ? (pagination as any).currentPage < (pagination as any).totalPages
+    : true;
 
   const lastPostElementRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -72,8 +82,8 @@ export function Feed() {
     createdAt: campaign.created_at,
     user: {
       id: campaign.user_id,
-      name: campaign.owner_name || "Anonymous",
-      username: campaign.owner_username || "",
+      name: campaign.owner_name,
+      username: campaign.owner_username,
       avatar: "",
       role: "Fundraiser",
       time: getTimeAgo(campaign.created_at),
@@ -99,8 +109,8 @@ export function Feed() {
     createdAt: thread.created_at,
     user: {
       id: thread.user_id,
-      name: thread.author_name || "Anonymous",
-      username: thread.author_username || "",
+      name: thread.author_name,
+      username: thread.author_username,
       avatar: "",
       role: thread.author_role || "user",
       time: getTimeAgo(thread.created_at),
@@ -121,15 +131,15 @@ export function Feed() {
     ...campaigns.map(mapCampaignToPost),
     ...posts.map(mapThreadToPost),
   ].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
   return (
-    <div className="w-full max-w-[800px] mx-auto min-h-screen py-8 pr-4 pl-4 sm:pl-4 sm:pr-4">
+    <div className="w-full max-w-200 mx-auto min-h-screen py-8 pr-4 pl-4 sm:pl-4 sm:pr-4">
       {/* Create Post / Thread Area */}
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-5 mb-8">
         <div className="flex items-center space-x-4 mb-4">
-          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+          <div className="w-11 h-11 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
             {localStorage.getItem("name")?.charAt(0)?.toUpperCase() || "U"}
           </div>
           <button
@@ -178,24 +188,25 @@ export function Feed() {
           // so mapThreadToPost can transform it correctly alongside fetched posts
           prependPost({
             ...newPost,
-            author_name: localStorage.getItem("name") || "Unknown",
-            author_role: localStorage.getItem("role") || "user",
+            author_name: localStorage.getItem("name"),
+            author_role: localStorage.getItem("role"),
           });
         }}
       />
 
       {/* Edit Post — reuse CreateThreadModal in edit mode */}
-      {editingCard && (editingCard.type === "post" || editingCard.type === "thread") && (
-        <CreateThreadModal
-          isOpen={true}
-          onClose={() => setEditingCard(null)}
-          editMode={true}
-          editPostId={editingCard.id.replace("post-", "")}
-          initialContent={editingCard.content.description}
-          initialImage={editingCard.content.image}
-          onSuccess={handleEditSuccess}
-        />
-      )}
+      {editingCard &&
+        (editingCard.type === "post" || editingCard.type === "thread") && (
+          <CreateThreadModal
+            isOpen={true}
+            onClose={() => setEditingCard(null)}
+            editMode={true}
+            editPostId={editingCard.id.replace("post-", "")}
+            initialContent={editingCard.content.description}
+            initialImage={editingCard.content.image}
+            onSuccess={handleEditSuccess}
+          />
+        )}
 
       {/* Edit Campaign — reuse CreateCampaignModal in edit mode */}
       {editingCard && editingCard.type === "campaign" && (
@@ -215,43 +226,58 @@ export function Feed() {
       )}
 
       {/* Error State */}
-      {(error || postsError) && !loading && !postsLoading && combinedFeed.length === 0 && (
-        <div className="bg-white rounded-3xl shadow-sm border border-red-200/60 p-8 mb-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-red-50 rounded-full flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-red-400" />
+      {(error || postsError) &&
+        !loading &&
+        !postsLoading &&
+        combinedFeed.length === 0 && (
+          <div className="bg-white rounded-3xl shadow-sm border border-red-200/60 p-8 mb-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-red-50 rounded-full flex items-center justify-center">
+              <Sparkles className="w-8 h-8 text-red-400" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">
+              Something went wrong
+            </h3>
+            <p className="text-slate-500 text-[15px] mb-4">
+              {error || postsError}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-slate-900 text-white text-[13px] font-bold rounded-full hover:bg-slate-800 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
-          <h3 className="text-lg font-bold text-slate-900 mb-2">Something went wrong</h3>
-          <p className="text-slate-500 text-[15px] mb-4">{error || postsError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-slate-900 text-white text-[13px] font-bold rounded-full hover:bg-slate-800 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      )}
+        )}
 
       {/* Empty State */}
-      {!loading && !postsLoading && !error && !postsError && combinedFeed.length === 0 && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-10 mb-8 text-center">
-          <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-full flex items-center justify-center border border-indigo-100">
-            <Megaphone className="w-10 h-10 text-indigo-400" />
+      {!loading &&
+        !postsLoading &&
+        !error &&
+        !postsError &&
+        combinedFeed.length === 0 && (
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-10 mb-8 text-center">
+            <div className="w-20 h-20 mx-auto mb-5 bg-linear-to-br from-indigo-50 to-violet-50 rounded-full flex items-center justify-center border border-indigo-100">
+              <Megaphone className="w-10 h-10 text-indigo-400" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              Nothing here yet
+            </h3>
+            <p className="text-slate-500 text-[15px] mb-6 max-w-md mx-auto">
+              Be the first to share something! Post a thread or start a
+              campaign.
+            </p>
+            {(localStorage.getItem("role") === "fundraiser" ||
+              localStorage.getItem("role") === "admin") && (
+              <a
+                href="/create-campaign"
+                className="inline-flex items-center px-6 py-2.5 bg-slate-900 text-white text-[14px] font-bold rounded-full hover:bg-slate-800 transition-colors shadow-sm"
+              >
+                <Megaphone className="w-4 h-4 mr-2" />
+                Create Your First Campaign
+              </a>
+            )}
           </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">Nothing here yet</h3>
-          <p className="text-slate-500 text-[15px] mb-6 max-w-md mx-auto">
-            Be the first to share something! Post a thread or start a campaign.
-          </p>
-          {(localStorage.getItem("role") === "fundraiser" || localStorage.getItem("role") === "admin") && (
-            <a
-              href="/create-campaign"
-              className="inline-flex items-center px-6 py-2.5 bg-slate-900 text-white text-[14px] font-bold rounded-full hover:bg-slate-800 transition-colors shadow-sm"
-            >
-              <Megaphone className="w-4 h-4 mr-2" />
-              Create Your First Campaign
-            </a>
-          )}
-        </div>
-      )}
+        )}
 
       {/* Feed Posts */}
       {combinedFeed.map((post: any, index: number) => {

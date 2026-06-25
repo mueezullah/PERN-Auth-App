@@ -3,6 +3,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import campaignRoutes from "./modules/campaigns/campaign.routes.js";
 import postRoutes from "./modules/posts/post.routes.js";
 import paymentRoutes from "./modules/payments/payments.route.js";
+import userRoutes from "./modules/users/user.routes.js";
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use("/auth", authRoutes);
 router.use("/campaigns", campaignRoutes);
 router.use("/posts", postRoutes);
 router.use("/payments", paymentRoutes);
+router.use("/users", userRoutes);
 
 export default router;

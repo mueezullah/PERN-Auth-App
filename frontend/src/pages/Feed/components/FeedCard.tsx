@@ -19,6 +19,15 @@ import { ImageWithFallback } from "./ImageFallback/ImageWithFallback";
 import DonationModal from "../../../components/DonationModal";
 import { useNavigate } from "react-router-dom";
 
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_BASE_API_URL: string;
+  }
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
+
 interface FeedCardProps {
   id: string;
   type?: "campaign" | "post" | "thread";
@@ -58,7 +67,11 @@ export function FeedCard({
   onEdit,
 }: FeedCardProps) {
   const currentUserId = localStorage.getItem("userId");
-  const isOwner = !!(currentUserId && user?.id && String(user.id) === String(currentUserId));
+  const isOwner = !!(
+    currentUserId &&
+    user?.id &&
+    String(user.id) === String(currentUserId)
+  );
 
   const [isDonationOpen, setIsDonationOpen] = useState(false);
   const navigate = useNavigate();
@@ -93,14 +106,19 @@ export function FeedCard({
   // Calculate days remaining until deadline
   const daysLeft = deadline
     ? Math.max(
-      0,
-      Math.ceil(
-        (new Date(deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    )
+        0,
+        Math.ceil(
+          (new Date(deadline).getTime() - now.getTime()) /
+            (1000 * 60 * 60 * 24),
+        ),
+      )
     : null;
   const isCampaignEnded = deadline ? new Date(deadline) < now : false;
-  const isCampaignCompleted = campaignStatus === 'completed' || (stats.raised !== undefined && stats.goal !== undefined && stats.raised >= stats.goal);
+  const isCampaignCompleted =
+    campaignStatus === "completed" ||
+    (stats.raised !== undefined &&
+      stats.goal !== undefined &&
+      stats.raised >= stats.goal);
   const isDonateDisabled = isCampaignEnded || isCampaignCompleted;
 
   const handleAction = async (actionType: string) => {
@@ -118,12 +136,15 @@ export function FeedCard({
             const response = await fetch(deleteEndpoint, {
               method: "DELETE",
               headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-              }
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
             });
             const result = await response.json();
             if (result.success) {
-              sessionStorage.setItem("pendingToast", isCamp ? "Campaign Deleted" : "Post Deleted");
+              sessionStorage.setItem(
+                "pendingToast",
+                isCamp ? "Campaign Deleted" : "Post Deleted",
+              );
               // Refresh list or trigger page reload to reflect changes
               window.location.reload();
             } else {
@@ -158,7 +179,9 @@ export function FeedCard({
         break;
 
       case "not_interested":
-        handleSuccess("Content hidden. We will adjust your recommendation feed.");
+        handleSuccess(
+          "Content hidden. We will adjust your recommendation feed.",
+        );
         // TODO: Temporarily hide this card in local state or update feed model
         break;
 
@@ -179,7 +202,7 @@ export function FeedCard({
               className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-slate-100"
             />
           ) : (
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg border border-slate-100">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg border border-slate-100">
               {user.name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -202,10 +225,11 @@ export function FeedCard({
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={`cursor-pointer p-2 rounded-full transition-all duration-200 ${isMenuOpen
-              ? "text-indigo-600 bg-indigo-50/80 scale-105"
-              : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
-              }`}
+            className={`cursor-pointer p-2 rounded-full transition-all duration-200 ${
+              isMenuOpen
+                ? "text-indigo-600 bg-indigo-50/80 scale-105"
+                : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+            }`}
           >
             <MoreHorizontal className="w-5 h-5" />
           </button>
@@ -321,7 +345,7 @@ export function FeedCard({
           </div>
           <div className="w-full bg-slate-200/80 rounded-full h-2 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-indigo-500 to-violet-500 h-full rounded-full transition-all duration-1000 ease-out"
+              className="bg-linear-to-r from-indigo-500 to-violet-500 h-full rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -332,32 +356,34 @@ export function FeedCard({
       <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:pt-4 mt-2">
         <div className="flex items-center space-x-1 sm:space-x-2">
           <button className="flex items-center space-x-2 text-slate-500 hover:text-rose-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-rose-50">
-            <Heart className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
+            <Heart className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
             <span className="font-semibold text-[13px] sm:text-sm">
               {stats.likes}
             </span>
           </button>
           <button className="flex items-center space-x-2 text-slate-500 hover:text-indigo-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-indigo-50">
-            <MessageSquare className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
+            <MessageSquare className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
             <span className="font-semibold text-[13px] sm:text-sm">
               {stats.comments}
             </span>
           </button>
           <button className="flex items-center space-x-2 text-slate-500 hover:text-emerald-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-emerald-50">
-            <Share2 className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
+            <Share2 className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
           </button>
           <button className="flex items-center space-x-2 text-slate-500 hover:text-amber-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-amber-50">
-            <Bookmark className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
+            <Bookmark className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
           </button>
         </div>
 
-        {isCampaign && !isOwner && (
-          isDonateDisabled ? (
+        {isCampaign &&
+          !isOwner &&
+          (isDonateDisabled ? (
             <span
-              className={`px-5 py-2 sm:px-6 sm:py-2.5 font-extrabold text-[13px] sm:text-[14px] rounded-full border select-none inline-flex items-center justify-center ${isCampaignCompleted
-                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                : "bg-rose-50 text-rose-700 border-rose-200"
-                }`}
+              className={`px-5 py-2 sm:px-6 sm:py-2.5 font-extrabold text-[13px] sm:text-[14px] rounded-full border select-none inline-flex items-center justify-center ${
+                isCampaignCompleted
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-rose-50 text-rose-700 border-rose-200"
+              }`}
             >
               {isCampaignCompleted ? "complete" : "InComplete"}
             </span>
@@ -368,8 +394,7 @@ export function FeedCard({
             >
               Donate Now
             </button>
-          )
-        )}
+          ))}
 
         {isCampaign && isOwner && (
           <button

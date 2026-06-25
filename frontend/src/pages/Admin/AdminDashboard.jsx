@@ -22,8 +22,10 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
   // Handle Logout functionality
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("name");
     localStorage.removeItem("role");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("username");
     setIsAuthenticated(false);
   };
 
@@ -78,7 +80,7 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
     }
   };
 
-  const loggedInUser = localStorage.getItem("loggedInUser");
+  const name = localStorage.getItem("name");
 
   // Fetch users from backend
   useEffect(() => {
@@ -147,7 +149,7 @@ const AdminDashboard = ({ setIsAuthenticated }) => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader
           activeView={activeView}
-          loggedInUser={loggedInUser}
+          name={name}
           handleFeedClick={handleFeedClick}
           handleLogout={handleLogout}
           setSidebarOpen={setSidebarOpen}
