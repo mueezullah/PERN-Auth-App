@@ -61,10 +61,10 @@ export function Navbar({
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("role");
     localStorage.removeItem("name");
+    localStorage.removeItem("role");
     localStorage.removeItem("username");
+    localStorage.removeItem("userId");
     if (setIsAuthenticated) setIsAuthenticated(false);
     navigate("/");
   };
@@ -205,7 +205,7 @@ export function Navbar({
                 }
                 className="text-sm hover:underline cursor-pointer font-semibold text-slate-700"
               >
-                {localStorage.getItem("loggedInUser") || "User"}
+                {localStorage.getItem("name")}
               </span>
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}

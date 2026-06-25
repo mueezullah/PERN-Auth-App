@@ -41,7 +41,7 @@ const Login = () => {
         result;
       if (success) {
         localStorage.setItem("token", jwtToken);
-        localStorage.setItem("loggedInUser", name);
+        localStorage.setItem("name", name);
         localStorage.setItem("role", role);
         localStorage.setItem("userId", String(id));
         localStorage.setItem("username", username);
