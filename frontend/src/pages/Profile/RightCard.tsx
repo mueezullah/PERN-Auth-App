@@ -37,7 +37,7 @@ export function ProfileRightSidebar({
     <div className="w-full py-8 pr-4 flex flex-col space-y-4">
       <div className="bg-white rounded-[20px] shadow-sm border border-slate-200/60 overflow-hidden">
         {/* Banner */}
-        <div className="h-32 bg-gradient-to-b from-[#0F2044] to-[#040B1A] relative">
+        <div className="h-32 bg-linear-to-b from-[#0F2044] to-[#040B1A] relative">
           <button className="absolute top-4 right-4 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">
             <ImageIcon className="w-4 h-4 text-slate-800" />
           </button>

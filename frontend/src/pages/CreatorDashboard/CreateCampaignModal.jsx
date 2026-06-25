@@ -142,11 +142,11 @@ const CreateCampaignModal = ({
   if (editMode) {
     return (
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 py-6 overflow-y-auto"
+        className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 py-6 overflow-y-auto"
         onClick={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}
       >
         <div
-          className="w-full max-w-[620px] bg-white rounded-3xl shadow-2xl border border-slate-200/60 overflow-hidden my-auto"
+          className="w-full max-w-155 bg-white rounded-3xl shadow-2xl border border-slate-200/60 overflow-hidden my-auto"
           style={{ animation: "slideUp 0.2s ease-out" }}
           onClick={(e) => e.stopPropagation()}
         >

@@ -158,7 +158,7 @@ const DonationModal = ({ isOpen, onClose, campaignId, goal, raised }) => {
 
           {stage === 2 && clientSecret && (
             // Elements MUST wrap the CheckoutForm securely!
-            <div className="min-h-[400px]">
+            <div className="min-h-100">
               <Elements options={options} stripe={stripePromise}>
                 <CheckoutForm amount={amount} onSuccess={handleSuccess} />
               </Elements>

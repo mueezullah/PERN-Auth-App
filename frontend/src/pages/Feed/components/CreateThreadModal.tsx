@@ -163,11 +163,11 @@ export function CreateThreadModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4"
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full max-w-[560px] bg-white rounded-3xl shadow-2xl border border-slate-200/60 overflow-hidden animate-in"
+        className="w-full max-w-140 bg-white rounded-3xl shadow-2xl border border-slate-200/60 overflow-hidden animate-in"
         style={{ animation: "slideUp 0.2s ease-out" }}
       >
         {/* Header */}
@@ -194,7 +194,7 @@ export function CreateThreadModal({
         <div className="px-5 pt-4 pb-2">
           {/* User Row */}
           <div className="flex items-start space-x-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
               {name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1">

@@ -135,11 +135,11 @@ export function Feed() {
   );
 
   return (
-    <div className="w-full max-w-[800px] mx-auto min-h-screen py-8 pr-4 pl-4 sm:pl-4 sm:pr-4">
+    <div className="w-full max-w-200 mx-auto min-h-screen py-8 pr-4 pl-4 sm:pl-4 sm:pr-4">
       {/* Create Post / Thread Area */}
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-5 mb-8">
         <div className="flex items-center space-x-4 mb-4">
-          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+          <div className="w-11 h-11 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-sm">
             {localStorage.getItem("name")?.charAt(0)?.toUpperCase() || "U"}
           </div>
           <button
@@ -256,7 +256,7 @@ export function Feed() {
         !postsError &&
         combinedFeed.length === 0 && (
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-10 mb-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-full flex items-center justify-center border border-indigo-100">
+            <div className="w-20 h-20 mx-auto mb-5 bg-linear-to-br from-indigo-50 to-violet-50 rounded-full flex items-center justify-center border border-indigo-100">
               <Megaphone className="w-10 h-10 text-indigo-400" />
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-2">
