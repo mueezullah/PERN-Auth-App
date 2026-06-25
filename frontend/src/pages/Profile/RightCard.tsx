@@ -1,8 +1,37 @@
 import React from 'react';
 import { Share, Image as ImageIcon, Plus, Edit } from 'lucide-react';
 
-export function ProfileRightSidebar({ name }: { name?: string }) {
-  const displayName = name;
+type ProfileStats = {
+  posts: number;
+  campaigns: number;
+  backedProjects: number;
+  totalContributed: number;
+  createdAt?: string;
+};
+
+export function ProfileRightSidebar({
+  name,
+  profileStats,
+}: {
+  name?: string;
+  profileStats?: ProfileStats | null;
+}) {
+  const displayName = name || "User";
+  const posts = profileStats?.posts ?? 0;
+  const campaigns = profileStats?.campaigns ?? 0;
+  const backedProjects = profileStats?.backedProjects ?? 0;
+  const totalContributed = profileStats?.totalContributed ?? 0;
+  const memberSince = profileStats?.createdAt
+    ? new Date(profileStats.createdAt).toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      })
+    : "-";
+  const totalContributedLabel = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(totalContributed);
 
   return (
     <div className="w-full py-8 pr-4 flex flex-col space-y-4">
@@ -19,7 +48,6 @@ export function ProfileRightSidebar({ name }: { name?: string }) {
           <h2 className="text-[20px] font-bold text-slate-900">{displayName}</h2>
 
           <div className="flex space-x-3 mb-6 mt-4">
-
             <button className="flex items-center space-x-2 w-fit bg-slate-100 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-1.5 rounded-full transition-colors">
               <Edit className="w-4 h-4" />
               <span>Update/Edit</span>
@@ -38,26 +66,26 @@ export function ProfileRightSidebar({ name }: { name?: string }) {
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-6">
             <div>
-              <p className="text-[16px] font-bold text-slate-900 leading-tight">0</p>
-              <p className="text-[13px] text-slate-500 font-medium">Posts</p>
+              <p className="text-[16px] font-bold text-slate-900 leading-tight">{posts}</p>
+              <p className="text-[13px] text-slate-500 font-medium">Active Posts</p>
             </div>
             <div>
-              <p className="text-[16px] font-bold text-slate-900 leading-tight">0</p>
-              <p className="text-[13px] text-slate-500 font-medium">Campaigns</p>
+              <p className="text-[16px] font-bold text-slate-900 leading-tight">{campaigns}</p>
+              <p className="text-[13px] text-slate-500 font-medium">Total Campaigns</p>
             </div>
             <div>
-              <p className="text-[16px] font-bold text-slate-900 leading-tight">0</p>
+              <p className="text-[16px] font-bold text-slate-900 leading-tight">{backedProjects}</p>
               <p className="text-[13px] text-slate-500 font-medium">Backed Projects</p>
             </div>
             <div>
-              <p className="text-[16px] font-bold text-slate-900 leading-tight">$0</p>
+              <p className="text-[16px] font-bold text-slate-900 leading-tight">{totalContributedLabel}</p>
               <p className="text-[13px] text-slate-500 font-medium">Total Contributed</p>
             </div>
           </div>
 
           {/* Single Stat */}
           <div className="mb-6">
-            <p className="text-[16px] font-bold text-slate-900 leading-tight">April 2026</p>
+            <p className="text-[16px] font-bold text-slate-900 leading-tight">{memberSince}</p>
             <p className="text-[13px] text-slate-500 font-medium">Member Since</p>
           </div>
 
