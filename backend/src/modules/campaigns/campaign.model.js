@@ -28,7 +28,14 @@ export const initTable = async () => {
   }
 };
 
-export const create = async (userId, title, description, goalAmount, deadline, mediaUrl) => {
+export const create = async (
+  userId,
+  title,
+  description,
+  goalAmount,
+  deadline,
+  mediaUrl,
+) => {
   const query = `
     INSERT INTO campaigns (user_id, title, description, goal_amount, deadline, media_url)
     VALUES ($1, $2, $3, $4, $5, $6)
@@ -39,7 +46,7 @@ export const create = async (userId, title, description, goalAmount, deadline, m
   return result.rows[0];
 };
 
-export const findAllActive = async (limit, offset, status = 'active') => {
+export const findAllActive = async (limit, offset, status = "active") => {
   let query = `
       SELECT c.*, u.name as owner_name, u.username as owner_username 
       FROM campaigns c
@@ -47,31 +54,50 @@ export const findAllActive = async (limit, offset, status = 'active') => {
     `;
   let countQuery = `SELECT COUNT(*) FROM campaigns`;
   const queryParams = [];
-    const countParams = [];
+  const countParams = [];
 
-    if (status && status !== 'all') {
-      query += ` WHERE c.status = $1`;
-      countQuery += ` WHERE status = $1`;
-      queryParams.push(status);
-      countParams.push(status);
+  if (status && status !== "all") {
+    query += ` WHERE c.status = $1`;
+    countQuery += ` WHERE status = $1`;
+    queryParams.push(status);
+    countParams.push(status);
 
-      query += ` ORDER BY c.created_at DESC LIMIT $2 OFFSET $3;`;
-      queryParams.push(limit, offset);
-    } else {
-      query += ` WHERE c.status != 'deleted'`;
-      countQuery += ` WHERE status != 'deleted'`;
+    query += ` ORDER BY c.created_at DESC LIMIT $2 OFFSET $3;`;
+    queryParams.push(limit, offset);
+  } else {
+    query += ` WHERE c.status != 'deleted'`;
+    countQuery += ` WHERE status != 'deleted'`;
 
-      query += ` ORDER BY c.created_at DESC LIMIT $1 OFFSET $2;`;
-      queryParams.push(limit, offset);
-    }
+    query += ` ORDER BY c.created_at DESC LIMIT $1 OFFSET $2;`;
+    queryParams.push(limit, offset);
+  }
 
-    const result = await pool.query(query, queryParams);
-    const countResult = await pool.query(countQuery, countParams);
+  const result = await pool.query(query, queryParams);
+  const countResult = await pool.query(countQuery, countParams);
 
-    return {
-      campaigns: result.rows,
-      total: parseInt(countResult.rows[0].count, 10)
-    };
+  return {
+    campaigns: result.rows,
+    total: parseInt(countResult.rows[0].count, 10),
+  };
+};
+
+export const findByUserId = async (userId, limit = 10, offset = 0) => {
+  const query = `
+      SELECT c.*, u.name as owner_name, u.username as owner_username 
+      FROM campaigns c
+      JOIN users u ON c.user_id = u.id
+      WHERE c.user_id = $1 AND c.status != 'deleted'
+      ORDER BY c.created_at DESC
+      LIMIT $2 OFFSET $3;
+    `;
+  const result = await pool.query(query, [userId, limit, offset]);
+  const totalQuery = `SELECT COUNT(*) FROM campaigns WHERE user_id = $1 AND status != 'deleted'`;
+  const totalResult = await pool.query(totalQuery, [userId]);
+
+  return {
+    campaigns: result.rows,
+    total: parseInt(totalResult.rows[0].count, 10),
+  };
 };
 
 export const findById = async (id) => {
@@ -81,11 +107,18 @@ export const findById = async (id) => {
       JOIN users u ON c.user_id = u.id
       WHERE c.id = $1 AND c.status != 'deleted';
     `;
-    const result = await pool.query(query, [id]);
-    return result.rows[0] || null;
+  const result = await pool.query(query, [id]);
+  return result.rows[0] || null;
 };
 
-export const update = async (id, title, description, goalAmount, deadline, mediaUrl) => {
+export const update = async (
+  id,
+  title,
+  description,
+  goalAmount,
+  deadline,
+  mediaUrl,
+) => {
   const query = `
       UPDATE campaigns
       SET title = COALESCE($1, title),
@@ -98,8 +131,15 @@ export const update = async (id, title, description, goalAmount, deadline, media
       WHERE id = $6
       RETURNING *;
     `;
-    const result = await pool.query(query, [title, description, goalAmount, deadline, mediaUrl, id]);
-    return result.rows[0];
+  const result = await pool.query(query, [
+    title,
+    description,
+    goalAmount,
+    deadline,
+    mediaUrl,
+    id,
+  ]);
+  return result.rows[0];
 };
 
 export const updateExpiredCampaigns = async () => {
@@ -110,8 +150,8 @@ export const updateExpiredCampaigns = async () => {
       WHERE status = 'active' AND deadline < CURRENT_TIMESTAMP
       RETURNING *;
     `;
-    const result = await pool.query(query);
-    return result.rows;
+  const result = await pool.query(query);
+  return result.rows;
 };
 
 export const deleteCampaign = async (id) => {
@@ -121,6 +161,6 @@ export const deleteCampaign = async (id) => {
       WHERE id = $1
       RETURNING *;
     `;
-    const result = await pool.query(query, [id]);
-    return result.rows[0] || null;
+  const result = await pool.query(query, [id]);
+  return result.rows[0] || null;
 };
