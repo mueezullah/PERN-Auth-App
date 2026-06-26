@@ -6,14 +6,16 @@ export const getUserProfileStats = async (username) => {
     return null;
   }
 
-  const [posts, campaigns, backedProjects, totalContributed] = await Promise.all([
-    UserModel.getPostCountByUserId(user.id),
-    UserModel.getCampaignCountByUserId(user.id),
-    UserModel.getBackedProjectsCountByUserId(user.id),
-    UserModel.getTotalContributedByUserId(user.id),
-  ]);
+  const [posts, campaigns, backedProjects, totalContributed] =
+    await Promise.all([
+      UserModel.getPostCountByUserId(user.id),
+      UserModel.getCampaignCountByUserId(user.id),
+      UserModel.getBackedProjectsCountByUserId(user.id),
+      UserModel.getTotalContributedByUserId(user.id),
+    ]);
 
   return {
+    id: user.id,
     name: user.name,
     username: user.username,
     createdAt: user.created_at,
