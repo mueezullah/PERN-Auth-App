@@ -6,6 +6,7 @@ import CreateCampaignModal from "../../../pages/CreatorDashboard/CreateCampaignM
 import { Sparkles, Edit3, Megaphone } from "lucide-react";
 import { useCampaigns } from "../../../features/creator/creatorSlice";
 import { usePosts } from "../../../features/Posts/postsSlice";
+import { formatRelativeTime } from "../../../utils";
 
 export function Feed() {
   const navigate = useNavigate();
@@ -76,55 +77,63 @@ export function Feed() {
 
   // Transform backend campaign data to FeedCard props format
   // Note: store raw `createdAt` ISO string for sorting; `user.time` is display-only
-  const mapCampaignToPost = (campaign: any) => ({
-    id: `campaign-${campaign.id}`,
-    type: "campaign" as const,
-    createdAt: campaign.created_at,
-    user: {
-      id: campaign.user_id,
-      name: campaign.owner_name,
-      username: campaign.owner_username,
-      avatar: "",
-      role: "Fundraiser",
-      time: getTimeAgo(campaign.created_at),
-    },
-    content: {
-      title: campaign.title,
-      description: campaign.description,
-      image: campaign.media_url || undefined,
-    },
-    stats: {
-      likes: 0,
-      comments: 0,
-      raised: parseFloat(campaign.current_amount) || 0,
-      goal: parseFloat(campaign.goal_amount) || 0,
-    },
-    deadline: campaign.deadline,
-    campaignStatus: campaign.status,
-  });
+  const mapCampaignToPost = (campaign: any) => {
+    const createdAt =
+      campaign.created_at || campaign.createdAt || new Date().toISOString();
+    return {
+      id: `campaign-${campaign.id}`,
+      type: "campaign" as const,
+      createdAt,
+      user: {
+        id: campaign.user_id,
+        name: campaign.owner_name,
+        username: campaign.owner_username,
+        avatar: "",
+        role: "Fundraiser",
+        time: formatRelativeTime(createdAt),
+      },
+      content: {
+        title: campaign.title,
+        description: campaign.description,
+        image: campaign.media_url || undefined,
+      },
+      stats: {
+        likes: 0,
+        comments: 0,
+        raised: parseFloat(campaign.current_amount) || 0,
+        goal: parseFloat(campaign.goal_amount) || 0,
+      },
+      deadline: campaign.deadline,
+      campaignStatus: campaign.status,
+    };
+  };
 
-  const mapThreadToPost = (thread: any) => ({
-    id: `post-${thread.id}`,
-    type: "thread" as const,
-    createdAt: thread.created_at,
-    user: {
-      id: thread.user_id,
-      name: thread.author_name,
-      username: thread.author_username,
-      avatar: "",
-      role: thread.author_role || "user",
-      time: getTimeAgo(thread.created_at),
-    },
-    content: {
-      title: undefined,
-      description: thread.content,
-      image: thread.media_url || thread.image_url || undefined,
-    },
-    stats: {
-      likes: thread.likes_count || 0,
-      comments: thread.comments_count || 0,
-    },
-  });
+  const mapThreadToPost = (thread: any) => {
+    const createdAt =
+      thread.created_at || thread.createdAt || new Date().toISOString();
+    return {
+      id: `post-${thread.id}`,
+      type: "thread" as const,
+      createdAt,
+      user: {
+        id: thread.user_id,
+        name: thread.author_name,
+        username: thread.author_username,
+        avatar: "",
+        role: thread.author_role || "user",
+        time: formatRelativeTime(createdAt),
+      },
+      content: {
+        title: undefined,
+        description: thread.content,
+        image: thread.media_url || thread.image_url || undefined,
+      },
+      stats: {
+        likes: thread.likes_count || 0,
+        comments: thread.comments_count || 0,
+      },
+    };
+  };
 
   // Sort by raw ISO date — newest first (latest on top)
   const combinedFeed = [
@@ -188,6 +197,10 @@ export function Feed() {
           // so mapThreadToPost can transform it correctly alongside fetched posts
           prependPost({
             ...newPost,
+            created_at:
+              newPost?.created_at ||
+              newPost?.createdAt ||
+              new Date().toISOString(),
             author_name: localStorage.getItem("name"),
             author_role: localStorage.getItem("role"),
           });
@@ -325,21 +338,4 @@ export function Feed() {
       )}
     </div>
   );
-}
-
-// Utility: relative time display
-function getTimeAgo(dateString: string): string {
-  const now = new Date();
-  const date = new Date(dateString);
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return `${months}mo ago`;
 }

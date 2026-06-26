@@ -33,10 +33,21 @@ export function Navbar({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false);
   const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(
+    localStorage.getItem("avatar") || "",
+  );
   const dropdownRef = useRef<HTMLDivElement>(null);
   const createDropdownRef = useRef<HTMLDivElement>(null);
 
   const role = localStorage.getItem("role");
+
+  useEffect(() => {
+    const handleAvatarUpdate = () => {
+      setAvatarUrl(localStorage.getItem("avatar") || "");
+    };
+    window.addEventListener("avatarChange", handleAvatarUpdate);
+    return () => window.removeEventListener("avatarChange", handleAvatarUpdate);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -211,7 +222,15 @@ export function Navbar({
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                 className="hover:ring-2 hover:ring-indigo-500/30 transition-all overflow-hidden rounded-full border border-slate-200 block"
               >
-                <User className="w-7 h-7 md:w-9 md:h-9 text-slate-500 bg-slate-100 p-1.5 rounded-full cursor-pointer" />
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={localStorage.getItem("name") || "Profile"}
+                    className="w-7 h-7 md:w-9 md:h-9 object-cover rounded-full cursor-pointer"
+                  />
+                ) : (
+                  <User className="w-7 h-7 md:w-9 md:h-9 text-slate-500 bg-slate-100 p-1.5 rounded-full cursor-pointer" />
+                )}
               </button>
             </div>
             {isProfileDropdownOpen && (
