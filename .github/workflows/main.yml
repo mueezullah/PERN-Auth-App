@@ -110,7 +110,7 @@ jobs:
       working-directory: ./frontend
 
     - name: Deploy Frontend to Netlify
-      run: npx netlify-cli deploy --dir=frontend/dist --prod
+      run: npx netlify-cli deploy --dir=frontend/dist --prod --json
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
