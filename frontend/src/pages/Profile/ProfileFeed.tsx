@@ -8,6 +8,7 @@ import {
   Share2,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { formatRelativeTime } from "../../utils";
 
 const sectionData = [
   { key: "Posts", title: "User Posts" },
@@ -16,7 +17,6 @@ const sectionData = [
   { key: "Saved", title: "Saved" },
   { key: "About", title: "About" },
 ];
-const tabs = sectionData.map((item) => item.key);
 
 export function ProfileFeed({
   name,
