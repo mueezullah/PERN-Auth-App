@@ -1,5 +1,8 @@
-import * as Campaign from './campaign.model.js';
-import { getPaginationData, parsePaginationParams } from '../../utils/pagination.js';
+import * as Campaign from "./campaign.model.js";
+import {
+  getPaginationData,
+  parsePaginationParams,
+} from "../../utils/pagination.js";
 import Stripe from "stripe";
 import pool from "../../config/db.js";
 
@@ -7,37 +10,52 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const createCampaign = async (userId, data) => {
   const { title, description, goal_amount, deadline, media_url } = data;
-  const newCampaign = await Campaign.create(userId, title, description, goal_amount, deadline, media_url);
+  const newCampaign = await Campaign.create(
+    userId,
+    title,
+    description,
+    goal_amount,
+    deadline,
+    media_url,
+  );
   return { success: true, status: 201, data: newCampaign };
 };
 
 export const getActiveCampaigns = async (queryPage, queryLimit, status) => {
   const { page, limit } = parsePaginationParams(queryPage, queryLimit);
-  
+
   if (page < 1 || limit < 1) {
-    return { success: false, status: 400, message: "Invalid pagination parameters" };
+    return {
+      success: false,
+      status: 400,
+      message: "Invalid pagination parameters",
+    };
   }
 
   // Update expired campaigns to 'ended' status before fetching
   await Campaign.updateExpiredCampaigns();
 
   const offset = (page - 1) * limit;
-  const { campaigns, total } = await Campaign.findAllActive(limit, offset, status);
-  
-  return { 
-    success: true, 
-    status: 200, 
+  const { campaigns, total } = await Campaign.findAllActive(
+    limit,
+    offset,
+    status,
+  );
+
+  return {
+    success: true,
+    status: 200,
     data: {
       campaigns,
-      pagination: getPaginationData(total, page, limit)
-    }
+      pagination: getPaginationData(total, page, limit),
+    },
   };
 };
 
 export const getCampaignById = async (id) => {
   // Update expired campaigns before fetching
   await Campaign.updateExpiredCampaigns();
-  
+
   const campaign = await Campaign.findById(id);
   if (!campaign) {
     return { success: false, status: 404, message: "Campaign not found" };
@@ -45,32 +63,70 @@ export const getCampaignById = async (id) => {
   return { success: true, status: 200, data: campaign };
 };
 
+export const getUserCampaigns = async (userId, queryPage, queryLimit) => {
+  const { page, limit } = parsePaginationParams(queryPage, queryLimit);
+  if (!userId || page < 1 || limit < 1) {
+    return { success: false, status: 400, message: "Invalid parameters" };
+  }
+
+  const offset = (page - 1) * limit;
+  const { campaigns, total } = await Campaign.findByUserId(
+    userId,
+    limit,
+    offset,
+  );
+
+  return {
+    success: true,
+    status: 200,
+    data: {
+      campaigns,
+      pagination: getPaginationData(total, page, limit),
+    },
+  };
+};
+
 export const updateCampaign = async (id, userId, data) => {
   const campaign = await Campaign.findById(id);
-  
+
   if (!campaign) {
     return { success: false, status: 404, message: "Campaign not found" };
   }
-  
+
   if (campaign.user_id !== userId) {
-    return { success: false, status: 403, message: "Forbidden: You do not own this campaign" };
+    return {
+      success: false,
+      status: 403,
+      message: "Forbidden: You do not own this campaign",
+    };
   }
-  
+
   const { title, description, goal_amount, deadline, media_url } = data;
-  const updatedCampaign = await Campaign.update(id, title, description, goal_amount, deadline, media_url);
-  
+  const updatedCampaign = await Campaign.update(
+    id,
+    title,
+    description,
+    goal_amount,
+    deadline,
+    media_url,
+  );
+
   return { success: true, status: 200, data: updatedCampaign };
 };
 
 export const deleteCampaign = async (id, userId) => {
   const campaign = await Campaign.findById(id);
-  
+
   if (!campaign) {
     return { success: false, status: 404, message: "Campaign not found" };
   }
-  
+
   if (campaign.user_id !== userId) {
-    return { success: false, status: 403, message: "Forbidden: You do not own this campaign" };
+    return {
+      success: false,
+      status: 403,
+      message: "Forbidden: You do not own this campaign",
+    };
   }
 
   // --- Refund all completed donations for this campaign ---
@@ -78,11 +134,16 @@ export const deleteCampaign = async (id, userId) => {
     `SELECT id, stripe_payment_intent_id, amount, donor_id 
      FROM donations 
      WHERE campaign_id = $1 AND status = 'completed'`,
-    [id]
+    [id],
   );
 
   const donations = donationsResult.rows;
-  const refundResults = { refunded: 0, failed: 0, totalRefunded: 0, details: [] };
+  const refundResults = {
+    refunded: 0,
+    failed: 0,
+    totalRefunded: 0,
+    details: [],
+  };
 
   for (const donation of donations) {
     try {
@@ -94,7 +155,7 @@ export const deleteCampaign = async (id, userId) => {
       // Mark donation as refunded in our database
       await pool.query(
         `UPDATE donations SET status = 'refunded', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-        [donation.id]
+        [donation.id],
       );
 
       refundResults.refunded += 1;
@@ -103,28 +164,31 @@ export const deleteCampaign = async (id, userId) => {
         donation_id: donation.id,
         donor_id: donation.donor_id,
         amount: donation.amount,
-        status: 'refunded'
+        status: "refunded",
       });
     } catch (refundError) {
-      console.error(`Failed to refund donation ${donation.id}:`, refundError.message);
+      console.error(
+        `Failed to refund donation ${donation.id}:`,
+        refundError.message,
+      );
       refundResults.failed += 1;
       refundResults.details.push({
         donation_id: donation.id,
         donor_id: donation.donor_id,
         amount: donation.amount,
-        status: 'refund_failed',
-        error: refundError.message
+        status: "refund_failed",
+        error: refundError.message,
       });
     }
   }
 
   // Soft-delete the campaign (sets status='deleted', current_amount=0)
   const deletedCampaign = await Campaign.deleteCampaign(id);
-  
-  return { 
-    success: true, 
-    status: 200, 
+
+  return {
+    success: true,
+    status: 200,
     data: deletedCampaign,
-    refunds: refundResults
+    refunds: refundResults,
   };
 };
