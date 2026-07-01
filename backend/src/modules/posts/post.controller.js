@@ -1,5 +1,6 @@
 import * as Post from "./post.model.js";
 import { getPaginationData, parsePaginationParams } from "../../utils/pagination.js";
+import { triggerPusherEvent } from "../../utils/pusher.js";
 
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -15,6 +16,13 @@ export const createPost = asyncHandler(async (req, res, next) => {
   }
 
   const newPost = await Post.createPost(userId, content, mediaUrl);
+
+  // Broadcast the fully populated post details (with author) in real-time
+  const postWithAuthor = await Post.findPostWithAuthor(newPost.id);
+  if (postWithAuthor) {
+    triggerPusherEvent("posts", "post-created", postWithAuthor);
+  }
+
   res.status(201).json({
     success: true,
     message: "Post created successfully",
@@ -85,6 +93,9 @@ export const deletePost = asyncHandler(async (req, res, next) => {
   // 4. Delete the post
   const deletedPost = await Post.deletePost(postId);
 
+  // Broadcast deletion in real-time
+  triggerPusherEvent("posts", "post-deleted", { id: postId });
+
   res.status(200).json({
     success: true,
     message: "Post deleted successfully",
@@ -105,6 +116,12 @@ export const updatePost = asyncHandler(async (req, res, next) => {
       success: false,
       message: "Post not found or you are not authorized to edit it"
     });
+  }
+
+  // Broadcast the updated post details (with author) in real-time
+  const postWithAuthor = await Post.findPostWithAuthor(postId);
+  if (postWithAuthor) {
+    triggerPusherEvent("posts", "post-updated", postWithAuthor);
   }
 
   res.status(200).json({
