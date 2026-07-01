@@ -7,6 +7,13 @@ type ProfileStats = {
   backedProjects: number;
   totalContributed: number;
   createdAt?: string;
+  role?: string;
+};
+
+const formatNameWithRole = (name: string, role?: string) => {
+  if (role === "admin") return `Admin, ${name}`;
+  if (role === "fundraiser") return `Fundraiser, ${name}`;
+  return name;
 };
 
 export function ProfileRightSidebar({
@@ -16,7 +23,7 @@ export function ProfileRightSidebar({
   name?: string;
   profileStats?: ProfileStats | null;
 }) {
-  const displayName = name || "User";
+  const displayName = formatNameWithRole(name || "User", profileStats?.role);
   const posts = profileStats?.posts ?? 0;
   const campaigns = profileStats?.campaigns ?? 0;
   const backedProjects = profileStats?.backedProjects ?? 0;
