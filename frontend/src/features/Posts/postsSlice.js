@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import * as postsAPI from "./postsAPI";
+import { getPusher } from "../../utils/pusher";
 
 export function usePosts(page = 1, limit = 10) {
   const [posts, setPosts] = useState([]);
@@ -24,6 +25,36 @@ export function usePosts(page = 1, limit = 10) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Real-time listener for posts channel
+  useEffect(() => {
+    const pusher = getPusher();
+    if (!pusher) return;
+
+    const channel = pusher.subscribe("posts");
+
+    channel.bind("post-created", (newPost) => {
+      setPosts((prev) => {
+        if (prev.some((p) => p.id === newPost.id)) return prev;
+        return [newPost, ...prev];
+      });
+    });
+
+    channel.bind("post-updated", (updatedPost) => {
+      setPosts((prev) =>
+        prev.map((p) => (p.id === updatedPost.id ? updatedPost : p))
+      );
+    });
+
+    channel.bind("post-deleted", (data) => {
+      setPosts((prev) => prev.filter((p) => p.id !== data.id));
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe("posts");
+    };
+  }, []);
 
   // Force a clean refetch from the beginning
   const refetch = useCallback(() => {

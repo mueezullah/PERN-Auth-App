@@ -18,6 +18,7 @@ export const getUserProfileStats = async (username) => {
     id: user.id,
     name: user.name,
     username: user.username,
+    role: user.role,
     createdAt: user.created_at,
     posts,
     campaigns,

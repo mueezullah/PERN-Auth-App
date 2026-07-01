@@ -101,6 +101,18 @@ export const updatePost = async (id, userId, content, mediaUrl) => {
       WHERE id = $3 AND user_id = $4
       RETURNING *;
     `;
-  const result = await pool.query(query, [content, mediaUrl, id, userId]);
+  const values = [content, mediaUrl, id, userId];
+  const result = await pool.query(query, values);
+  return result.rows[0] || null;
+};
+
+export const findPostWithAuthor = async (id) => {
+  const query = `
+    SELECT p.*, u.name as author_name, u.username as author_username, u.email as author_email, u.role as author_role
+    FROM posts p
+    JOIN users u ON p.user_id = u.id
+    WHERE p.id = $1 AND p.status != 'deleted';
+  `;
+  const result = await pool.query(query, [id]);
   return result.rows[0] || null;
 };
