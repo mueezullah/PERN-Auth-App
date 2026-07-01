@@ -1,22 +1,30 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Plus,
-  SlidersHorizontal,
-  User,
-  Heart,
-  MessageCircle,
-  Share2,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, User, Heart, MessageCircle, Share2, Clock } from "lucide-react";
 import { clsx } from "clsx";
 import { formatRelativeTime } from "../../utils";
+import { CreateThreadModal } from "../Feed/components/CreateThreadModal";
 
 const sectionData = [
-  { key: "Posts", title: "User Posts" },
-  { key: "Campaigns", title: "User Campaigns" },
+  { key: "Posts", title: "Posts" },
+  { key: "Campaigns", title: "Campaigns" },
   { key: "Donations", title: "Donations" },
   { key: "Saved", title: "Saved" },
   { key: "About", title: "About" },
 ];
+
+const POSTS_PAGE_SIZE = 4;
+const CAMPAIGNS_PAGE_SIZE = 3;
+
+const getPaginationPage = (pagination: { page?: number; currentPage?: number } | null) =>
+  pagination?.page ?? pagination?.currentPage ?? 1;
+
+const hasMorePages = (pagination: { page?: number; currentPage?: number; totalPages?: number } | null) => {
+  if (!pagination?.totalPages) {
+    return false;
+  }
+  return getPaginationPage(pagination) < pagination.totalPages;
+};
 
 export function ProfileFeed({
   name,
@@ -25,6 +33,7 @@ export function ProfileFeed({
   name?: string;
   username?: string;
 }) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Posts");
   const [posts, setPosts] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -36,6 +45,7 @@ export function ProfileFeed({
   const [campaignsPagination, setCampaignsPagination] = useState<any | null>(
     null,
   );
+  const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
   const displayName = name || username || "User";
   const avatar = localStorage.getItem("avatar");
   const observer = useRef<IntersectionObserver | null>(null);
@@ -68,10 +78,10 @@ export function ProfileFeed({
 
         const [postsRes, campaignsRes] = await Promise.all([
           fetch(
-            `${import.meta.env.VITE_BASE_API_URL}/posts/user/${nextUserId}?page=1&limit=6`,
+            `${import.meta.env.VITE_BASE_API_URL}/posts/user/${nextUserId}?page=1&limit=${POSTS_PAGE_SIZE}`,
           ),
           fetch(
-            `${import.meta.env.VITE_BASE_API_URL}/campaigns/user/${nextUserId}?page=1&limit=6`,
+            `${import.meta.env.VITE_BASE_API_URL}/campaigns/user/${nextUserId}?page=1&limit=${CAMPAIGNS_PAGE_SIZE}`,
           ),
         ]);
 
@@ -109,21 +119,20 @@ export function ProfileFeed({
     const currentPagination =
       activeTab === "Posts" ? postsPagination : campaignsPagination;
 
-    if (
-      !currentPagination ||
-      currentPagination.currentPage >= currentPagination.totalPages
-    ) {
+    if (!hasMorePages(currentPagination)) {
       return;
     }
 
     setLoadingMore(true);
 
     try {
-      const nextPage = currentPagination.currentPage + 1;
+      const nextPage = getPaginationPage(currentPagination) + 1;
+      const pageSize =
+        activeTab === "Posts" ? POSTS_PAGE_SIZE : CAMPAIGNS_PAGE_SIZE;
       const endpoint =
         activeTab === "Posts"
-          ? `${import.meta.env.VITE_BASE_API_URL}/posts/user/${userId}?page=${nextPage}&limit=6`
-          : `${import.meta.env.VITE_BASE_API_URL}/campaigns/user/${userId}?page=${nextPage}&limit=6`;
+          ? `${import.meta.env.VITE_BASE_API_URL}/posts/user/${userId}?page=${nextPage}&limit=${pageSize}`
+          : `${import.meta.env.VITE_BASE_API_URL}/campaigns/user/${userId}?page=${nextPage}&limit=${pageSize}`;
 
       const res = await fetch(endpoint);
       const data = await res.json();
@@ -168,8 +177,8 @@ export function ProfileFeed({
     activeTab === "Posts" ? posts : activeTab === "Campaigns" ? campaigns : [];
   const hasMoreItems =
     activeTab === "Posts"
-      ? postsPagination?.currentPage < postsPagination?.totalPages
-      : campaignsPagination?.currentPage < campaignsPagination?.totalPages;
+      ? hasMorePages(postsPagination)
+      : hasMorePages(campaignsPagination);
 
   const lastItemElementRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -188,7 +197,8 @@ export function ProfileFeed({
           }
         },
         {
-          threshold: 0.25,
+          rootMargin: "200px",
+          threshold: 0.1,
         },
       );
 
@@ -211,10 +221,42 @@ export function ProfileFeed({
       .join("");
   };
 
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  const getCampaignProgress = (item: any) => {
+    const raised =
+      Number(
+        item.current_amount ?? item.raised_amount ?? item.amount_raised ?? 0,
+      ) || 0;
+    const goal = Number(item.goal_amount ?? item.goal ?? 0) || 0;
+    const progress = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
+    const deadline = item.deadline ? new Date(item.deadline) : null;
+    const now = new Date();
+    const daysLeft = deadline
+      ? Math.max(
+          0,
+          Math.ceil(
+            (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+          ),
+        )
+      : null;
+    const statusLabel =
+      item.status === "completed" || raised >= goal
+        ? "Fully funded"
+        : "Funding";
+
+    return { raised, goal, progress, daysLeft, statusLabel };
+  };
+
   const renderGridItem = (item: any, type: string) => {
     if (type === "Posts") {
       return (
-        <div className="rounded-3xl px-4 py-4 transition-colors hover:bg-slate-50">
+        <div className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-500 text-sm">
@@ -271,26 +313,107 @@ export function ProfileFeed({
       );
     }
 
+    const { raised, goal, progress, daysLeft, statusLabel } =
+      getCampaignProgress(item);
+
     return (
-      <div
-        key={`campaign-${item.id}`}
-        className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
-      >
-        <div className="font-semibold text-slate-900 mb-2 line-clamp-2">
-          {item.title || "Untitled campaign"}
+      <div className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-500 text-sm">
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt={item.author_name || displayName || "Profile"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="font-semibold text-slate-700">
+                  {getInitials(item.author_name || displayName)}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
+                <span>{item.author_name || displayName}</span>
+                <span className="text-slate-400">·</span>
+                <span className="text-slate-500">
+                  {formatRelativeTime(item.created_at)}
+                </span>
+              </div>
+              <div className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                Campaign
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2 text-slate-900">
+            <h3 className="text-base font-semibold leading-7">
+              {item.title || "Untitled campaign"}
+            </h3>
+            {item.description && (
+              <p className="text-base leading-7">{item.description}</p>
+            )}
+            {item.media_url && (
+              <img
+                src={item.media_url}
+                alt="Campaign"
+                className="w-full rounded-2xl object-cover"
+              />
+            )}
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                    Funding progress
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">
+                    {formatCurrency(raised)} raised
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {Math.round(progress)}%
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    of {formatCurrency(goal)}
+                  </p>
+                </div>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-linear-to-r from-emerald-500 to-cyan-500 transition-all duration-700"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  {daysLeft !== null
+                    ? daysLeft === 0
+                      ? "Deadline reached"
+                      : `${daysLeft} days left`
+                    : "No deadline"}
+                </span>
+                <span className="font-medium text-slate-700">
+                  {statusLabel}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="text-sm text-slate-600 line-clamp-3">
-          {item.description || "No description available."}
-        </p>
-        {item.media_url && (
-          <img
-            src={item.media_url}
-            alt="Campaign"
-            className="mt-3 w-full h-36 object-cover rounded-2xl"
-          />
-        )}
-        <div className="mt-3 text-xs text-slate-500">
-          Goal: ${parseFloat(item.goal_amount || 0).toLocaleString()}
+        <div className="flex items-center justify-start gap-4 pt-3 text-slate-500">
+          <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
+            <Heart className="w-4 h-4" />
+            <span>{item.likes ?? 0}</span>
+          </button>
+          <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
+            <MessageCircle className="w-4 h-4" />
+            <span>{item.comments ?? 0}</span>
+          </button>
+          <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
+            <Share2 className="w-4 h-4" />
+            <span>Share</span>
+          </button>
         </div>
       </div>
     );
@@ -300,15 +423,17 @@ export function ProfileFeed({
     <div className="w-full max-w-175 mx-auto py-8 flex flex-col">
       <div className="flex items-center space-x-4 mb-6 px-4">
         <div className="relative">
-          <button className="hover:ring-2 hover:ring-indigo-500/30 transition-all overflow-hidden rounded-full border border-slate-200 block">
+          <button className="hover:ring-2 hover:ring-indigo-500/30 transition-all overflow-hidden rounded-full border border-slate-200 block shrink-0">
             {avatar ? (
               <img
                 src={avatar}
                 alt={displayName || "Profile"}
-                className="w-7 h-7 md:w-9 md:h-9 object-cover rounded-full cursor-pointer"
+                className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 object-cover rounded-full cursor-pointer"
               />
             ) : (
-              <User className="w-7 h-7 md:w-9 md:h-9 text-slate-500 bg-slate-100 p-1.5 rounded-full cursor-pointer" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 sm:h-16 sm:w-16 md:h-20 md:w-20">
+                <User className="h-8 w-8 text-slate-500 sm:h-10 sm:w-10" />
+              </div>
             )}
           </button>
         </div>
@@ -316,6 +441,9 @@ export function ProfileFeed({
           <h1 className="text-3xl font-extrabold text-slate-900 leading-tight">
             {displayName}
           </h1>
+          {username && (
+            <p className="text-md font-bold text-slate-800 mt-1">@{username}</p>
+          )}
         </div>
       </div>
 
@@ -325,7 +453,7 @@ export function ProfileFeed({
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={clsx(
-              "px-4 py-2 rounded-full text-[14px] font-semibold transition-colors whitespace-nowrap",
+              "px-4 py-2 cursor-pointer rounded-full text-[14px] font-semibold transition-colors whitespace-nowrap",
               activeTab === tab.key
                 ? "bg-slate-200/70 text-slate-900"
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
@@ -337,15 +465,22 @@ export function ProfileFeed({
       </div>
 
       <div className="flex items-center space-x-3 px-4 pb-4 border-b border-slate-200 mb-6">
-        <button className="flex items-center space-x-1.5 px-4 py-2 rounded-full border border-slate-300 hover:bg-slate-50 transition-colors">
-          <Plus className="w-4 h-4 text-slate-700" />
-          <span className="text-[14px] font-semibold text-slate-700">
-            New Campaign
-          </span>
-        </button>
-        <button className="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600">
-          <SlidersHorizontal className="w-4 h-4" />
-        </button>
+        {(activeTab === "Posts" || activeTab === "Campaigns") && (
+          <button
+            onClick={() =>
+              activeTab === "Posts"
+                ? setIsThreadModalOpen(true)
+                : navigate("/create-campaign")
+            }
+            className="flex items-center space-x-1.5 px-4 py-2 rounded-full border border-slate-300 cursor-pointer hover:bg-slate-200 transition-colors"
+          >
+            <Plus className="w-4 h-4 text-slate-700" />
+            <span className="text-[14px] font-semibold text-slate-700">
+              {activeTab === "Posts" ? "New Posts" : "New Campaign"}
+            </span>
+          </button>
+        )}
+        <button className="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600"></button>
       </div>
 
       {loading ? (
@@ -390,6 +525,28 @@ export function ProfileFeed({
           )}
         </div>
       )}
+
+      {/* Thread Modal for creating new posts */}
+      <CreateThreadModal
+        isOpen={isThreadModalOpen}
+        onClose={() => setIsThreadModalOpen(false)}
+        onSuccess={(newPost: any) => {
+          setIsThreadModalOpen(false);
+          // Prepend the new post to the posts list
+          setPosts((prevPosts) => [
+            {
+              ...newPost,
+              created_at:
+                newPost?.created_at ||
+                newPost?.createdAt ||
+                new Date().toISOString(),
+              author_name: localStorage.getItem("name"),
+              author_role: localStorage.getItem("role"),
+            },
+            ...prevPosts,
+          ]);
+        }}
+      />
     </div>
   );
 }

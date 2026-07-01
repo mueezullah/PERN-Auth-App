@@ -7,6 +7,7 @@ import { fetchUserProfileStats } from "../../features/profile/profileAPI";
 type ProfileStats = {
   name?: string;
   username?: string;
+  role?: string;
   posts: number;
   campaigns: number;
   backedProjects: number;
