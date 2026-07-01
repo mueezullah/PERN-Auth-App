@@ -1,5 +1,11 @@
-import { Pool } from "pg";
+import { Pool, types } from "pg";
 import env from "./env.js";
+
+// Override parsing for TIMESTAMP without time zone (OID 1114) to parse as UTC.
+// By default, pg parses TIMESTAMP without time zone as local server time.
+types.setTypeParser(1114, (stringValue) => {
+  return new Date(stringValue.replace(" ", "T") + "Z");
+});
 
 export const pool = new Pool({
   host: env.DB_HOST,
