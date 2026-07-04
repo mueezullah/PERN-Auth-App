@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   UserPlus,
   EyeOff,
+  MessageCircle,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { handleSuccess, handleError } from "../../../utils";
@@ -173,6 +174,10 @@ export function FeedCard({
         // TODO: Call API endpoint POST /api/reports with content details
         break;
 
+      case "message":
+        navigate(`/chats/${user.username}`, { state: { name: user.name } });
+        break;
+
       case "follow":
         handleSuccess(`You are now following ${user.name}!`);
         // TODO: Call API endpoint POST /api/users/follow with user.id
@@ -195,20 +200,30 @@ export function FeedCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          {user.avatar ? (
-            <ImageWithFallback
-              src={user.avatar}
-              alt={user.name}
-              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-slate-100"
-            />
-          ) : (
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg border border-slate-100">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          {/* Clickable avatar — navigates to user's profile */}
+          <div
+            className="cursor-pointer"
+            onClick={() => user.username && navigate(`/user/${user.username}`, { state: { name: user.name } })}
+          >
+            {user.avatar ? (
+              <ImageWithFallback
+                src={user.avatar}
+                alt={user.name}
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-slate-100"
+              />
+            ) : (
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg border border-slate-100">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
           <div>
             <div className="flex items-center space-x-1.5">
-              <h3 className="font-bold text-[15px] sm:text-[16px] text-slate-900 cursor-pointer hover:underline">
+              {/* Clickable name — navigates to user's profile */}
+              <h3
+                className="font-bold text-[15px] sm:text-[16px] text-slate-900 cursor-pointer hover:underline"
+                onClick={() => user.username && navigate(`/user/${user.username}`, { state: { name: user.name } })}
+              >
                 {user.name}
               </h3>
               {isCampaign && (
@@ -272,6 +287,14 @@ export function FeedCard({
                   >
                     <AlertTriangle className="w-4 h-4 text-rose-500" />
                     <span>Report Content</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAction("message")}
+                    className="flex cursor-pointer items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-medium text-[#d7dadc] hover:bg-[#272729] transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4 text-[#d7dadc]" />
+                    <span>Message</span>
                   </button>
 
                   <button
