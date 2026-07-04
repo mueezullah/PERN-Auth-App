@@ -29,9 +29,11 @@ const hasMorePages = (pagination: { page?: number; currentPage?: number; totalPa
 export function ProfileFeed({
   name,
   username,
+  isOwnProfile = true,
 }: {
   name?: string;
   username?: string;
+  isOwnProfile?: boolean;
 }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Posts");
@@ -47,7 +49,7 @@ export function ProfileFeed({
   );
   const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
   const displayName = name || username || "User";
-  const avatar = localStorage.getItem("avatar");
+  const avatar = isOwnProfile ? localStorage.getItem("avatar") : null;
   const observer = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -465,7 +467,7 @@ export function ProfileFeed({
       </div>
 
       <div className="flex items-center space-x-3 px-4 pb-4 border-b border-slate-200 mb-6">
-        {(activeTab === "Posts" || activeTab === "Campaigns") && (
+        {isOwnProfile && (activeTab === "Posts" || activeTab === "Campaigns") && (
           <button
             onClick={() =>
               activeTab === "Posts"
@@ -526,27 +528,29 @@ export function ProfileFeed({
         </div>
       )}
 
-      {/* Thread Modal for creating new posts */}
-      <CreateThreadModal
-        isOpen={isThreadModalOpen}
-        onClose={() => setIsThreadModalOpen(false)}
-        onSuccess={(newPost: any) => {
-          setIsThreadModalOpen(false);
-          // Prepend the new post to the posts list
-          setPosts((prevPosts) => [
-            {
-              ...newPost,
-              created_at:
-                newPost?.created_at ||
-                newPost?.createdAt ||
-                new Date().toISOString(),
-              author_name: localStorage.getItem("name"),
-              author_role: localStorage.getItem("role"),
-            },
-            ...prevPosts,
-          ]);
-        }}
-      />
+      {/* Thread Modal for creating new posts — only on own profile */}
+      {isOwnProfile && (
+        <CreateThreadModal
+          isOpen={isThreadModalOpen}
+          onClose={() => setIsThreadModalOpen(false)}
+          onSuccess={(newPost: any) => {
+            setIsThreadModalOpen(false);
+            // Prepend the new post to the posts list
+            setPosts((prevPosts) => [
+              {
+                ...newPost,
+                created_at:
+                  newPost?.created_at ||
+                  newPost?.createdAt ||
+                  new Date().toISOString(),
+                author_name: localStorage.getItem("name"),
+                author_role: localStorage.getItem("role"),
+              },
+              ...prevPosts,
+            ]);
+          }}
+        />
+      )}
     </div>
   );
 }
