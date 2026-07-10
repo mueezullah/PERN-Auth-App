@@ -5,7 +5,6 @@ import {
 } from "../../utils/pagination.js";
 import Stripe from "stripe";
 import pool from "../../config/db.js";
-import { triggerPusherEvent } from "../../utils/pusher.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -20,11 +19,7 @@ export const createCampaign = async (userId, data) => {
     media_url,
   );
 
-  // Broadcast campaign creation in real-time with full details (joins owner info)
-  const campaignWithDetails = await Campaign.findById(newCampaign.id);
-  if (campaignWithDetails) {
-    triggerPusherEvent("campaigns", "campaign-created", campaignWithDetails);
-  }
+
 
   return { success: true, status: 201, data: newCampaign };
 };
@@ -119,11 +114,7 @@ export const updateCampaign = async (id, userId, data) => {
     media_url,
   );
 
-  // Broadcast campaign update in real-time with full details
-  const campaignWithDetails = await Campaign.findById(id);
-  if (campaignWithDetails) {
-    triggerPusherEvent("campaigns", "campaign-updated", campaignWithDetails);
-  }
+
 
   return { success: true, status: 200, data: updatedCampaign };
 };
@@ -199,8 +190,7 @@ export const deleteCampaign = async (id, userId) => {
   // Soft-delete the campaign (sets status='deleted', current_amount=0)
   const deletedCampaign = await Campaign.deleteCampaign(id);
 
-  // Broadcast deletion in real-time
-  triggerPusherEvent("campaigns", "campaign-deleted", { id: id });
+
 
   return {
     success: true,
