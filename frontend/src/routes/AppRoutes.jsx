@@ -19,6 +19,8 @@ import Campaigns from "../pages/CreatorDashboard/Campaigns";
 import { RootLayout as ProfileRootLayout } from "../pages/Profile/RootLayout";
 import { ProfileView } from "../pages/Profile/ProfileView";
 import KYCVerification from "../pages/KYC/KYCVerification";
+import CampaignDetail from "../pages/Detail/CampaignDetail";
+import PostDetail from "../pages/Detail/PostDetail";
 
 const AppRoutes = ({ isAuthenticated, setIsAuthenticated, isLoading }) => {
   
@@ -76,6 +78,28 @@ const AppRoutes = ({ isAuthenticated, setIsAuthenticated, isLoading }) => {
         element={
           <PrivateRoute
             element={<Feed setIsAuthenticated={setIsAuthenticated} />}
+            isAuthenticated={isAuthenticated}
+            isLoading={isLoading}
+          />
+        }
+      />
+
+      {/* Detail pages */}
+      <Route
+        path="/campaigns/:id"
+        element={
+          <PrivateRoute
+            element={<CampaignDetail />}
+            isAuthenticated={isAuthenticated}
+            isLoading={isLoading}
+          />
+        }
+      />
+      <Route
+        path="/posts/:id"
+        element={
+          <PrivateRoute
+            element={<PostDetail />}
             isAuthenticated={isAuthenticated}
             isLoading={isLoading}
           />
