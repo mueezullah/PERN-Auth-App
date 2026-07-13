@@ -99,7 +99,7 @@ export function Feed() {
       },
       stats: {
         likes: 0,
-        comments: 0,
+        comments: parseInt(campaign.comments_count, 10) || 0,
         raised: parseFloat(campaign.current_amount) || 0,
         goal: parseFloat(campaign.goal_amount) || 0,
       },
@@ -120,7 +120,7 @@ export function Feed() {
         name: thread.author_name,
         username: thread.author_username,
         avatar: "",
-        role: thread.author_role || "user",
+        role: thread.author_role,
         time: formatRelativeTime(createdAt),
       },
       content: {
@@ -130,7 +130,7 @@ export function Feed() {
       },
       stats: {
         likes: thread.likes_count || 0,
-        comments: thread.comments_count || 0,
+        comments: parseInt(thread.comments_count, 10) || 0,
       },
     };
   };
