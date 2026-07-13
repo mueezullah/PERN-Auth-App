@@ -120,3 +120,20 @@ export const updatePost = asyncHandler(async (req, res, next) => {
     data: updatedPost
   });
 });
+
+export const getPostById = asyncHandler(async (req, res, next) => {
+  const postId = parseInt(req.params.id, 10);
+  if (isNaN(postId)) {
+    return res.status(400).json({ success: false, message: "Invalid post ID" });
+  }
+
+  const post = await Post.findPostWithAuthor(postId);
+  if (!post) {
+    return res.status(404).json({ success: false, message: "Post not found" });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: post
+  });
+});

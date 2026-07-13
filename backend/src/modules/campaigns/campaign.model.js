@@ -48,7 +48,9 @@ export const create = async (
 
 export const findAllActive = async (limit, offset, status = "active") => {
   let query = `
-      SELECT c.*, u.name as owner_name, u.username as owner_username 
+      SELECT c.*, u.name as owner_name, u.username as owner_username,
+      (SELECT COUNT(*) FROM comments WHERE target_type = 'campaign'
+      AND target_id = c.id) AS comments_count
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
     `;
@@ -83,12 +85,12 @@ export const findAllActive = async (limit, offset, status = "active") => {
 
 export const findByUserId = async (userId, limit = 10, offset = 0) => {
   const query = `
-      SELECT c.*, u.name as owner_name, u.username as owner_username 
+      SELECT c.*, u.name as owner_name, u.username as owner_username,
+      (SELECT COUNT(*) FROM comments WHERE target_type = 'campaign' 
+      AND target_id = c.id) AS comments_count
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
       WHERE c.user_id = $1 AND c.status != 'deleted'
-      ORDER BY c.created_at DESC
-      LIMIT $2 OFFSET $3;
     `;
   const result = await pool.query(query, [userId, limit, offset]);
   const totalQuery = `SELECT COUNT(*) FROM campaigns WHERE user_id = $1 AND status != 'deleted'`;
@@ -102,7 +104,9 @@ export const findByUserId = async (userId, limit = 10, offset = 0) => {
 
 export const findById = async (id) => {
   const query = `
-      SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email
+      SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email,
+      (SELECT COUNT(*) FROM comments WHERE target_type = 'campaign' 
+      AND target_id = c.id) AS comments_count
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
       WHERE c.id = $1 AND c.status != 'deleted';
