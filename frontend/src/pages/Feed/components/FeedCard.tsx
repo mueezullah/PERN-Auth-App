@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   UserPlus,
   EyeOff,
+  MessageCircle,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { handleSuccess, handleError } from "../../../utils";
@@ -78,7 +79,6 @@ export function FeedCard({
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
   const isCampaign =
     type === "campaign" &&
     stats.raised !== undefined &&
@@ -173,6 +173,10 @@ export function FeedCard({
         // TODO: Call API endpoint POST /api/reports with content details
         break;
 
+      case "message":
+        navigate(`/chats/${user.username}`, { state: { name: user.name } });
+        break;
+
       case "follow":
         handleSuccess(`You are now following ${user.name}!`);
         // TODO: Call API endpoint POST /api/users/follow with user.id
@@ -190,25 +194,53 @@ export function FeedCard({
     }
   };
 
+  const handleCardClick = () => {
+    const numericId = id.replace(/\D/g, "");
+    if (type === "campaign") {
+      navigate(`/campaigns/${numericId}`);
+    } else {
+      navigate(`/posts/${numericId}`);
+    }
+  };
+
   return (
-    <article className="bg-white rounded-3xl shadow-sm border mb-8 border-slate-200/60 p-5 sm:p-6 transition-all hover:shadow-md">
+    <article 
+      onClick={handleCardClick}
+      className="bg-white rounded-3xl shadow-sm border mb-8 border-slate-200/60 p-5 sm:p-6 transition-all hover:shadow-md cursor-pointer hover:border-indigo-100"
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          {user.avatar ? (
-            <ImageWithFallback
-              src={user.avatar}
-              alt={user.name}
-              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-slate-100"
-            />
-          ) : (
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg border border-slate-100">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          {/* Clickable avatar — navigates to user's profile */}
+          <div
+            className="cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              user.username && navigate(`/user/${user.username}`, { state: { name: user.name } });
+            }}
+          >
+            {user.avatar ? (
+              <ImageWithFallback
+                src={user.avatar}
+                alt={user.name}
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-slate-100"
+              />
+            ) : (
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg border border-slate-100">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
           <div>
             <div className="flex items-center space-x-1.5">
-              <h3 className="font-bold text-[15px] sm:text-[16px] text-slate-900 cursor-pointer hover:underline">
+              {/* Clickable name — navigates to user's profile */}
+              <h3
+                className="font-bold text-[15px] sm:text-[16px] text-slate-900 cursor-pointer hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  user.username && navigate(`/user/${user.username}`, { state: { name: user.name } });
+                }}
+              >
                 {user.name}
               </h3>
               {isCampaign && (
@@ -224,7 +256,10 @@ export function FeedCard({
         </div>
         <div className="relative" ref={menuRef}>
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMenuOpen(!isMenuOpen);
+            }}
             className={`cursor-pointer p-2 rounded-full transition-all duration-200 ${
               isMenuOpen
                 ? "text-indigo-600 bg-indigo-50/80 scale-105"
@@ -235,7 +270,10 @@ export function FeedCard({
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-[#1a1a1b] border border-slate-700/50 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.5)] py-2 z-50 text-[#d7dadc] animate-in fade-in slide-in-from-top-3 duration-250">
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-0 mt-2 w-52 bg-[#1a1a1b] border border-slate-700/50 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.5)] py-2 z-50 text-[#d7dadc] animate-in fade-in slide-in-from-top-3 duration-250"
+            >
               {isOwner ? (
                 // OWNER OPTIONS (Your Post / Campaign)
                 <>
@@ -272,6 +310,14 @@ export function FeedCard({
                   >
                     <AlertTriangle className="w-4 h-4 text-rose-500" />
                     <span>Report Content</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAction("message")}
+                    className="flex cursor-pointer items-center space-x-2.5 w-full px-4 py-2.5 text-left text-[14px] font-medium text-[#d7dadc] hover:bg-[#272729] transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4 text-[#d7dadc]" />
+                    <span>Message</span>
                   </button>
 
                   <button
@@ -355,22 +401,34 @@ export function FeedCard({
       {/* Actions */}
       <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:pt-4 mt-2">
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <button className="flex items-center space-x-2 text-slate-500 hover:text-rose-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-rose-50">
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center space-x-2 text-slate-500 hover:text-rose-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-rose-50"
+          >
             <Heart className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
             <span className="font-semibold text-[13px] sm:text-sm">
               {stats.likes}
             </span>
           </button>
-          <button className="flex items-center space-x-2 text-slate-500 hover:text-indigo-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-indigo-50">
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center space-x-2 text-slate-500 hover:text-indigo-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-indigo-50"
+          >
             <MessageSquare className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
             <span className="font-semibold text-[13px] sm:text-sm">
               {stats.comments}
             </span>
           </button>
-          <button className="flex items-center space-x-2 text-slate-500 hover:text-emerald-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-emerald-50">
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center space-x-2 text-slate-500 hover:text-emerald-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-emerald-50"
+          >
             <Share2 className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
           </button>
-          <button className="flex items-center space-x-2 text-slate-500 hover:text-amber-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-amber-50">
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center space-x-2 text-slate-500 hover:text-amber-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-amber-50"
+          >
             <Bookmark className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
           </button>
         </div>
@@ -379,6 +437,7 @@ export function FeedCard({
           !isOwner &&
           (isDonateDisabled ? (
             <span
+              onClick={(e) => e.stopPropagation()}
               className={`px-5 py-2 sm:px-6 sm:py-2.5 font-extrabold text-[13px] sm:text-[14px] rounded-full border select-none inline-flex items-center justify-center ${
                 isCampaignCompleted
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -389,7 +448,10 @@ export function FeedCard({
             </span>
           ) : (
             <button
-              onClick={() => setIsDonationOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDonationOpen(true);
+              }}
               className="px-5 cursor-pointer py-2 sm:px-6 sm:py-2.5 bg-slate-900 text-white hover:bg-slate-800 font-bold text-[13px] sm:text-[14px] rounded-full active:scale-95 transition-all shadow-sm"
             >
               Donate Now
@@ -398,7 +460,10 @@ export function FeedCard({
 
         {isCampaign && isOwner && (
           <button
-            onClick={() => navigate("/creator/dashboard")}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/creator/dashboard");
+            }}
             className="px-5 py-2 cursor-pointer sm:px-6 sm:py-2.5 bg-indigo-600 text-white font-bold text-[13px] sm:text-[14px] rounded-full hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
           >
             View Analytics
@@ -406,14 +471,16 @@ export function FeedCard({
         )}
       </div>
 
-      <DonationModal
-        isOpen={isDonationOpen}
-        onClose={() => setIsDonationOpen(false)}
-        // Feed passes 'id' as 'campaign-1', so we must extract only the number!
-        campaignId={parseInt(id.replace(/\D/g, ""))}
-        goal={stats.goal}
-        raised={stats.raised}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <DonationModal
+          isOpen={isDonationOpen}
+          onClose={() => setIsDonationOpen(false)}
+          // Feed passes 'id' as 'campaign-1', so we must extract only the number!
+          campaignId={parseInt(id.replace(/\D/g, ""))}
+          goal={stats.goal}
+          raised={stats.raised}
+        />
+      </div>
     </article>
   );
 }

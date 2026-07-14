@@ -42,3 +42,12 @@ export const updatePost = async (id, postData) => {
   }
   return data.data;
 };
+
+export const fetchPostById = async (id) => {
+  const res = await fetch(`${API_BASE}/${id}`);
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Post not found");
+  }
+  return data.data;
+};

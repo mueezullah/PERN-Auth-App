@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import * as campaignAPI from "./creatorAPI";
-import { getPusher } from "../../utils/pusher";
 
 /**
  * Hook to fetch paginated campaigns.
@@ -32,35 +31,7 @@ export function useCampaigns(page = 1, limit = 10, status = "all") {
     fetchData();
   }, [fetchData]);
 
-  // Real-time listener for campaigns channel
-  useEffect(() => {
-    const pusher = getPusher();
-    if (!pusher) return;
 
-    const channel = pusher.subscribe("campaigns");
-
-    channel.bind("campaign-created", (newCampaign) => {
-      setCampaigns((prev) => {
-        if (prev.some((c) => c.id === newCampaign.id)) return prev;
-        return [newCampaign, ...prev];
-      });
-    });
-
-    channel.bind("campaign-updated", (updatedCampaign) => {
-      setCampaigns((prev) =>
-        prev.map((c) => (c.id === updatedCampaign.id ? updatedCampaign : c))
-      );
-    });
-
-    channel.bind("campaign-deleted", (data) => {
-      setCampaigns((prev) => prev.filter((c) => c.id !== data.id));
-    });
-
-    return () => {
-      channel.unbind_all();
-      pusher.unsubscribe("campaigns");
-    };
-  }, []);
 
   // Force refetch from page 1
   const refetch = useCallback(() => {

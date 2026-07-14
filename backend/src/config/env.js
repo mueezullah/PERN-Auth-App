@@ -18,11 +18,6 @@ const DB_PORT = process.env.DB_PORT;
 const DB_PASSWORD = process.env.DB_PASSWORD;
 const DB_NAME = process.env.DB_NAME || "pern_auth";
 
-const PUSHER_APP_ID=process.env.PUSHER_APP_ID;
-const PUSHER_KEY=process.env.PUSHER_KEY;
-const PUSHER_SECRET=process.env.PUSHER_SECRET;
-const PUSHER_CLUSTER=process.env.PUSHER_CLUSTER;
-
 export default {
   PORT,
   JWT_SECRET,
@@ -31,8 +26,4 @@ export default {
   DB_PORT,
   DB_PASSWORD,
   DB_NAME,
-  PUSHER_APP_ID,
-  PUSHER_KEY,
-  PUSHER_SECRET,
-  PUSHER_CLUSTER,
 };

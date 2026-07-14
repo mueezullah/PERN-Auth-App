@@ -1,5 +1,5 @@
 import React from "react";
-import { Share, Image as ImageIcon, Plus, Edit } from "lucide-react";
+import { MessageCircle, Image as ImageIcon, Plus, Edit } from "lucide-react";
 
 type ProfileStats = {
   posts: number;
@@ -19,20 +19,24 @@ const formatNameWithRole = (name: string, role?: string) => {
 export function ProfileRightSidebar({
   name,
   profileStats,
+  isOwnProfile = true,
 }: {
   name?: string;
   profileStats?: ProfileStats | null;
+  isOwnProfile?: boolean;
 }) {
-  const displayName = formatNameWithRole(name || "User", profileStats?.role);
+  const displayName = isOwnProfile
+    ? formatNameWithRole(name || "User", profileStats?.role)
+    : (name || "User");
   const posts = profileStats?.posts ?? 0;
   const campaigns = profileStats?.campaigns ?? 0;
   const backedProjects = profileStats?.backedProjects ?? 0;
   const totalContributed = profileStats?.totalContributed ?? 0;
   const memberSince = profileStats?.createdAt
     ? new Date(profileStats.createdAt).toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      })
+      month: "long",
+      year: "numeric",
+    })
     : "-";
   const totalContributedLabel = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -45,9 +49,11 @@ export function ProfileRightSidebar({
       <div className="bg-white rounded-[20px] shadow-sm border border-slate-200/60 overflow-hidden">
         {/* Banner */}
         <div className="h-32 bg-linear-to-b from-[#0F2044] to-[#040B1A] relative">
-          <button className="absolute top-4 right-4 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">
-            <ImageIcon className="w-4 h-4 text-slate-800" />
-          </button>
+          {isOwnProfile && (
+            <button className="absolute top-4 right-4 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">
+              <ImageIcon className="w-4 h-4 text-slate-800" />
+            </button>
+          )}
         </div>
 
         {/* Profile Info Card Content */}
@@ -57,14 +63,18 @@ export function ProfileRightSidebar({
           </h2>
 
           <div className="flex space-x-3 mb-6 mt-4">
-            <button className="flex items-center space-x-2 w-fit bg-slate-100 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-1.5 rounded-full transition-colors">
-              <Edit className="w-4 h-4" />
-              <span>Update/Edit</span>
-            </button>
-            <button className="flex items-center space-x-2 w-fit bg-slate-100 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-1.5 rounded-full transition-colors">
-              <Share className="w-4 h-4" />
-              <span>Share</span>
-            </button>
+            {isOwnProfile && (
+              <button className="flex items-center space-x-2 w-fit bg-slate-100 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-1.5 rounded-full transition-colors">
+                <Edit className="w-4 h-4" />
+                <span>Update</span>
+              </button>
+            )}
+            {!isOwnProfile && (
+              <button className="flex items-center space-x-2 w-fit bg-slate-100 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-1.5 rounded-full transition-colors">
+                <MessageCircle className="w-4 h-4" />
+                <span>Message</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center space-x-4 mb-6">
@@ -129,10 +139,12 @@ export function ProfileRightSidebar({
             <h3 className="text-[12px] font-semibold text-slate-500 tracking-wide uppercase mb-3">
               Social Links
             </h3>
-            <button className="flex items-center space-x-1.5 w-fit bg-slate-100/80 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-2 rounded-full transition-colors">
-              <Plus className="w-5 h-5" />
-              <span>Add Social Link</span>
-            </button>
+            {isOwnProfile && (
+              <button className="flex items-center space-x-1.5 w-fit bg-slate-100/80 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-2 rounded-full transition-colors">
+                <Plus className="w-5 h-5" />
+                <span>Add Social Link</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

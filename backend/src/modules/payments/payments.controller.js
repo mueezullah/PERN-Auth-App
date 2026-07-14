@@ -1,7 +1,6 @@
 import pool from "../../config/db.js";
 import Stripe from "stripe"
 import { findById as findCampaignById } from "../campaigns/campaign.model.js";
-import { triggerPusherEvent } from "../../utils/pusher.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -231,15 +230,7 @@ async function fulfillDonation(paymentIntentId) {
         await client.query('COMMIT');
         console.log(`✅ Donation fulfilled: PaymentIntent ${paymentIntentId}, $${amount} → campaign ${campaignId}`);
 
-        // Broadcast the updated campaign stats in real-time
-        try {
-            const updatedCampaign = await findCampaignById(campaignId);
-            if (updatedCampaign) {
-                triggerPusherEvent("campaigns", "campaign-updated", updatedCampaign);
-            }
-        } catch (pusherError) {
-            console.error("⚠️ Failed to broadcast campaign update after donation:", pusherError.message);
-        }
+
 
         return { success: true };
     } catch (dbError) {
