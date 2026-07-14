@@ -63,26 +63,21 @@ function findBestResponse(userInput) {
 
 export default function ChatWidget({ isAuthenticated }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    {
+      id: "welcome",
+      sender: "bot",
+      text: "Hi there! 👋 I'm your CrowdFund Support Assistant. Ask me anything about how our campaigns work, security, or refunds!",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      isSystem: false
+    }
+  ]);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   
   const panelRef = useRef(null);
   const buttonRef = useRef(null);
   const messagesEndRef = useRef(null);
-
-  // Initialize with greeting message
-  useEffect(() => {
-    setMessages([
-      {
-        id: "welcome",
-        sender: "bot",
-        text: "Hi there! 👋 I'm your CrowdFund Support Assistant. Ask me anything about how our campaigns work, security, or refunds!",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        isSystem: false
-      }
-    ]);
-  }, []);
 
   // Close widget on outside click
   useEffect(() => {
