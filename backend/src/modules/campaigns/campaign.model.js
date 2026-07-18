@@ -91,6 +91,8 @@ export const findByUserId = async (userId, limit = 10, offset = 0) => {
       FROM campaigns c
       JOIN users u ON c.user_id = u.id
       WHERE c.user_id = $1 AND c.status != 'deleted'
+      ORDER BY c.created_at DESC
+      LIMIT $2 OFFSET $3;
     `;
   const result = await pool.query(query, [userId, limit, offset]);
   const totalQuery = `SELECT COUNT(*) FROM campaigns WHERE user_id = $1 AND status != 'deleted'`;
