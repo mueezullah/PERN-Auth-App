@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import * as commentsAPI from "./commentsAPI";
 
-export function useComments(targetType, targetId) {
-  const [comments, setComments] = useState([]);
+export function useComments(targetType: string, targetId: string | number) {
+  const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const commentsRef = useRef(comments);
+  const commentsRef = useRef<any[]>(comments);
   commentsRef.current = comments;
 
   // Initial load, when page is loaded
@@ -16,7 +16,7 @@ export function useComments(targetType, targetId) {
       setError(null);
       const data = await commentsAPI.fetchComments(targetType, targetId);
       setComments(data);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to load comments");
     } finally {
       setLoading(false);
@@ -41,7 +41,7 @@ export function useComments(targetType, targetId) {
         setComments((prev) => {
           // Merge lists and filter out duplicates by ID
           const existingIds = new Set(prev.map(c => c.id));
-          const filteredNew = newComments.filter(nc => !existingIds.has(nc.id));
+          const filteredNew = (newComments as any[]).filter(nc => !existingIds.has(nc.id));
           
           if (filteredNew.length === 0) return prev;
           return [...prev, ...filteredNew];
@@ -56,7 +56,7 @@ export function useComments(targetType, targetId) {
   useEffect(() => {
     loadInitialComments();
 
-    let intervalId = null;
+    let intervalId: any = null;
 
     const startPolling = () => {
       if (intervalId) clearInterval(intervalId);
@@ -92,7 +92,7 @@ export function useComments(targetType, targetId) {
   }, [loadInitialComments, pollNewComments]);
 
   // Add Comment with optimistic UI updates
-  const addComment = useCallback(async (content) => {
+  const addComment = useCallback(async (content: string) => {
     const tempId = `temp_${Date.now()}`;
     const name = localStorage.getItem("name") || "Me";
     const username = localStorage.getItem("username") || "me";
@@ -103,7 +103,7 @@ export function useComments(targetType, targetId) {
       id: tempId,
       user_id: userId ? parseInt(userId, 10) : 0,
       target_type: targetType,
-      target_id: parseInt(targetId, 10),
+      target_id: typeof targetId === "string" ? parseInt(targetId, 10) : targetId,
       content,
       created_at: new Date().toISOString(),
       author_name: name,
@@ -122,12 +122,29 @@ export function useComments(targetType, targetId) {
         prev.map(c => c.id === tempId ? realComment : c)
       );
       return realComment;
-    } catch (err) {
+    } catch (err: any) {
       // Revert optimistic update on failure
       setComments((prev) => prev.filter(c => c.id !== tempId));
       throw err;
     }
   }, [targetType, targetId]);
 
-  return { comments, loading, error, addComment };
+  // Delete Comment with optimistic UI updates
+  const removeComment = useCallback(async (commentId: number) => {
+    const originalComments = [...commentsRef.current];
+
+    // Optimistically update list
+    setComments((prev) => prev.filter(c => c.id !== commentId));
+
+    try {
+      await commentsAPI.deleteComment(commentId);
+    } catch (err: any) {
+      // Revert optimistic update on failure
+      setComments(originalComments);
+      throw err;
+    }
+  }, []);
+
+  // Return it:
+  return { comments, loading, error, addComment, removeComment };
 }
