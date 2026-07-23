@@ -5,10 +5,11 @@ import postRoutes from "./modules/posts/post.routes.js";
 import paymentRoutes from "./modules/payments/payments.route.js";
 import userRoutes from "./modules/users/user.routes.js";
 import commentRoutes from "./modules/comments/comment.routes.js";
+import likeRoutes from "./modules/likes/like.routes.js";
 
 const router = express.Router();
 
-// Base health verification endpoint
+// Testing route
 router.get("/health", (req, res) => res.send("Working Perfectly Well!!!"));
 
 // Mount module routes
@@ -18,5 +19,6 @@ router.use("/posts", postRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/users", userRoutes);
 router.use("/comments", commentRoutes);
+router.use("/likes", likeRoutes);
 
 export default router;

@@ -3,6 +3,7 @@ import * as CampaignModel from "./modules/campaigns/campaign.model.js";
 import * as PostModel from "./modules/posts/post.model.js";
 import { initTable as initDonationTable } from "./modules/payments/donation.model.js";
 import * as CommentModel from "./modules/comments/comment.model.js";
+import * as LikeModel from "./modules/likes/like.model.js";
 
 export const initializeDatabaseSchema = async () => {
     try {
@@ -12,6 +13,7 @@ export const initializeDatabaseSchema = async () => {
         await PostModel.initTable();
         await initDonationTable();
         await CommentModel.initTable();
+        await LikeModel.initTable();
         console.log("🚀 Database schema completely verified and initialized");
     } catch (err) {
         console.error("❌ Critical: Failed to initialize database tables:", err);
