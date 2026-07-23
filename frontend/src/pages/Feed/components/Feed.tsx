@@ -98,7 +98,7 @@ export function Feed() {
         image: campaign.media_url || undefined,
       },
       stats: {
-        likes: 0,
+        likes: parseInt(campaign.likes_count, 10) || 0,
         comments: parseInt(campaign.comments_count, 10) || 0,
         raised: parseFloat(campaign.current_amount) || 0,
         goal: parseFloat(campaign.goal_amount) || 0,
@@ -113,7 +113,7 @@ export function Feed() {
       thread.created_at || thread.createdAt || new Date().toISOString();
     return {
       id: `post-${thread.id}`,
-      type: "thread" as const,
+      type: "post" as const,
       createdAt,
       user: {
         id: thread.user_id,
@@ -129,7 +129,7 @@ export function Feed() {
         image: thread.media_url || thread.image_url || undefined,
       },
       stats: {
-        likes: thread.likes_count || 0,
+        likes: parseInt(thread.likes_count, 10) || 0,
         comments: parseInt(thread.comments_count, 10) || 0,
       },
     };

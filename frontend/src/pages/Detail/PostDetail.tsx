@@ -7,9 +7,12 @@ import { fetchPostById } from "../../features/Posts/postsAPI";
 import { formatRelativeTime } from "../../utils";
 import { ImageWithFallback } from "../Feed/components/ImageFallback/ImageWithFallback";
 import { CommentSection } from "./CommentSection";
+import { useLike } from "../../features/likes/useLike";
 
 export default function PostDetail() {
   const { id } = useParams<{ id: string }>();
+  const numericId = id ? parseInt(id, 10) : 0;
+  const { liked, likesCount, toggleLike } = useLike("post", numericId);
   const navigate = useNavigate();
   const [post, setPost] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,8 +133,22 @@ export default function PostDetail() {
               {/* Action Buttons */}
               <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
                 <div className="flex items-center space-x-1 sm:space-x-2">
-                  <button className="flex items-center space-x-2 text-slate-500 hover:text-rose-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-rose-50">
-                    <Heart className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
+                  <button
+                    onClick={toggleLike}
+                    className={`flex items-center space-x-2 transition-colors group px-2 py-1.5 rounded-full cursor-pointer ${
+                      liked
+                        ? "text-rose-500 hover:bg-rose-50"
+                        : "text-slate-500 hover:text-rose-500 hover:bg-rose-50"
+                    }`}
+                  >
+                    <Heart
+                      className={`w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90 ${
+                        liked ? "fill-current" : ""
+                      }`}
+                    />
+                    <span className="font-semibold text-[13px] sm:text-sm">
+                      {likesCount}
+                    </span>
                   </button>
                   <button className="flex items-center space-x-2 text-slate-500 hover:text-indigo-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-indigo-50">
                     <MessageSquare className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />

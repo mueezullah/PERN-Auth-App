@@ -4,6 +4,35 @@ import { Plus, User, Heart, MessageCircle, Share2, Clock } from "lucide-react";
 import { clsx } from "clsx";
 import { formatRelativeTime } from "../../utils";
 import { CreateThreadModal } from "../Feed/components/CreateThreadModal";
+import { useLike } from "../../features/likes/useLike";
+
+function ProfileLikeButton({
+  type,
+  id,
+  initialLikes = 0,
+}: {
+  type: "post" | "campaign";
+  id: number;
+  initialLikes: number;
+}) {
+  const { liked, likesCount, loading, toggleLike } = useLike(type, id);
+  const displayCount = loading ? initialLikes : likesCount;
+
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleLike();
+      }}
+      className={`inline-flex items-center gap-2 text-sm transition-colors cursor-pointer ${
+        liked ? "text-rose-500 font-semibold" : "text-slate-500 hover:text-slate-900"
+      }`}
+    >
+      <Heart className={`w-4 h-4 ${liked ? "fill-current" : ""}`} />
+      <span>{displayCount}</span>
+    </span>
+  );
+}
 
 const sectionData = [
   { key: "Posts", title: "Posts" },
@@ -241,11 +270,11 @@ export function ProfileFeed({
     const now = new Date();
     const daysLeft = deadline
       ? Math.max(
-          0,
-          Math.ceil(
-            (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-          ),
-        )
+        0,
+        Math.ceil(
+          (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+        ),
+      )
       : null;
     const statusLabel =
       item.status === "completed" || raised >= goal
@@ -258,7 +287,10 @@ export function ProfileFeed({
   const renderGridItem = (item: any, type: string) => {
     if (type === "Posts") {
       return (
-        <div className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100">
+        <div
+          onClick={() => navigate(`/posts/${item.id}`)}
+          className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100"
+        >
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-500 text-sm">
@@ -298,13 +330,20 @@ export function ProfileFeed({
             </div>
           </div>
           <div className="flex items-center justify-start gap-4 pt-3 text-slate-500">
-            <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
-              <Heart className="w-4 h-4" />
-              <span>{item.likes ?? 0}</span>
-            </button>
-            <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
+            <ProfileLikeButton
+              type="post"
+              id={item.id}
+              initialLikes={item.likes_count ?? item.likes ?? 0}
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/posts/${item.id}`);
+              }}
+              className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors cursor-pointer"
+            >
               <MessageCircle className="w-4 h-4" />
-              <span>{item.comments ?? 0}</span>
+              <span>{item.comments_count ?? item.comments ?? 0}</span>
             </button>
             <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
               <Share2 className="w-4 h-4" />
@@ -319,99 +358,109 @@ export function ProfileFeed({
       getCampaignProgress(item);
 
     return (
-      <div className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100">
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-500 text-sm">
-              {avatar ? (
-                <img
-                  src={avatar}
-                  alt={item.author_name || displayName || "Profile"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="font-semibold text-slate-700">
-                  {getInitials(item.author_name || displayName)}
-                </span>
+        <div
+          onClick={() => navigate(`/campaigns/${item.id}`)}
+          className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100"
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-500 text-sm">
+                {avatar ? (
+                  <img
+                    src={avatar}
+                    alt={item.author_name || displayName || "Profile"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="font-semibold text-slate-700">
+                    {getInitials(item.author_name || displayName)}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
+                  <span>{item.author_name || displayName}</span>
+                  <span className="text-slate-400">·</span>
+                  <span className="text-slate-500">
+                    {formatRelativeTime(item.created_at)}
+                  </span>
+                </div>
+                <div className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                  Campaign
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2 text-slate-900">
+              <h3 className="text-base font-semibold leading-7">
+                {item.title || "Untitled campaign"}
+              </h3>
+              {item.description && (
+                <p className="text-base leading-7">{item.description}</p>
               )}
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
-                <span>{item.author_name || displayName}</span>
-                <span className="text-slate-400">·</span>
-                <span className="text-slate-500">
-                  {formatRelativeTime(item.created_at)}
-                </span>
-              </div>
-              <div className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                Campaign
-              </div>
-            </div>
-          </div>
-          <div className="space-y-2 text-slate-900">
-            <h3 className="text-base font-semibold leading-7">
-              {item.title || "Untitled campaign"}
-            </h3>
-            {item.description && (
-              <p className="text-base leading-7">{item.description}</p>
-            )}
-            {item.media_url && (
-              <img
-                src={item.media_url}
-                alt="Campaign"
-                className="w-full rounded-2xl object-cover"
-              />
-            )}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
-                    Funding progress
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {formatCurrency(raised)} raised
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {Math.round(progress)}%
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    of {formatCurrency(goal)}
-                  </p>
-                </div>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-full rounded-full bg-linear-to-r from-emerald-500 to-cyan-500 transition-all duration-700"
-                  style={{ width: `${progress}%` }}
+              {item.media_url && (
+                <img
+                  src={item.media_url}
+                  alt="Campaign"
+                  className="w-full rounded-2xl object-cover"
                 />
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
-                  {daysLeft !== null
-                    ? daysLeft === 0
-                      ? "Deadline reached"
-                      : `${daysLeft} days left`
-                    : "No deadline"}
-                </span>
-                <span className="font-medium text-slate-700">
-                  {statusLabel}
-                </span>
+              )}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                      Funding progress
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      {formatCurrency(raised)} raised
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {Math.round(progress)}%
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      of {formatCurrency(goal)}
+                    </p>
+                  </div>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full rounded-full bg-linear-to-r from-emerald-500 to-cyan-500 transition-all duration-700"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" />
+                    {daysLeft !== null
+                      ? daysLeft === 0
+                        ? "Deadline reached"
+                        : `${daysLeft} days left`
+                      : "No deadline"}
+                  </span>
+                  <span className="font-medium text-slate-700">
+                    {statusLabel}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center justify-start gap-4 pt-3 text-slate-500">
-          <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
-            <Heart className="w-4 h-4" />
-            <span>{item.likes ?? 0}</span>
-          </button>
-          <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
-            <MessageCircle className="w-4 h-4" />
-            <span>{item.comments ?? 0}</span>
-          </button>
+          <div className="flex items-center justify-start gap-4 pt-3 text-slate-500">
+            <ProfileLikeButton
+              type="campaign"
+              id={item.id}
+              initialLikes={item.likes_count ?? item.likes ?? 0}
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/campaigns/${item.id}`);
+              }}
+              className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>{item.comments_count ?? item.comments ?? 0}</span>
+            </button>
           <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
             <Share2 className="w-4 h-4" />
             <span>Share</span>
