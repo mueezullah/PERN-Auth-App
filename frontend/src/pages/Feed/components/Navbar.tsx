@@ -41,7 +41,6 @@ export function Navbar({
   const createDropdownRef = useRef<HTMLDivElement>(null);
 
   const role = localStorage.getItem("role");
-  const username = localStorage.getItem("username");
 
   useEffect(() => {
     const handleAvatarUpdate = () => {
