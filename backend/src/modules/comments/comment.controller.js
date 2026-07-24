@@ -75,3 +75,39 @@ export const createComment = asyncHandler(async (req, res, next) => {
     data: commentWithDetails || newComment
   });
 });
+
+export const deleteComment = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  const numericId = parseInt(id, 10);
+  if (isNaN(numericId)) {
+    return res.status(400).json({
+      success: false,
+      message: "Comment ID must be an integer"
+    });
+  }
+
+  const comment = await Comment.findById(numericId);
+  if (!comment) {
+    return res.status(404).json({
+      success: false,
+      message: "Comment not found"
+    });
+  }
+
+  // Authorize: Only the comment creator or an admin can delete the comment
+  if (comment.user_id !== userId && req.user.role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "You are not authorized to delete this comment"
+    });
+  }
+
+  await Comment.deleteById(numericId);
+
+  res.status(200).json({
+    success: true,
+    message: "Comment deleted successfully"
+  });
+});

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Send, MessageSquare } from "lucide-react";
+import { Send, MessageSquare, Trash2 } from "lucide-react";
 import { useComments } from "../../features/comments/useComments";
 import { formatRelativeTime } from "../../utils";
 import { handleError } from "../../utils";
@@ -14,12 +14,24 @@ interface CommentSectionProps {
 
 
 export function CommentSection({ targetType, targetId }: CommentSectionProps) {
-  const { comments, loading, error, addComment } = useComments(targetType, targetId) as {
+  const { comments, loading, error, addComment, removeComment } = useComments(targetType, targetId) as {
     comments: any[];
     loading: boolean;
     error: string | null;
     addComment: (content: string) => Promise<void>;
+    removeComment: (commentId: number) => Promise<void>;
   };
+  const currentUserId = localStorage.getItem("userId") ? parseInt(localStorage.getItem("userId")!, 10) : null;
+
+  const handleDelete = async (commentId: number) => {
+    if (!window.confirm("Are you sure you want to permanently delete this comment?")) return;
+    try {
+      await removeComment(commentId);
+    } catch (err: any) {
+      handleError(err.message || "Failed to delete comment");
+    }
+  };
+
   const [inputText, setInputText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -88,18 +100,30 @@ export function CommentSection({ targetType, targetId }: CommentSectionProps) {
                     comment.author_name.charAt(0).toUpperCase() : "U"}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-bold text-slate-900 text-[13.5px]">
-                      {comment.author_name}
-                    </span>
-                    {comment.author_username && (
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        @{comment.author_username}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-bold text-slate-900 text-[13.5px]">
+                        {comment.author_name}
                       </span>
+                      {comment.author_username && (
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          @{comment.author_username}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-slate-400 font-medium select-none">
+                        • {formatRelativeTime(comment.created_at)}
+                      </span>
+                    </div>
+                    {/* Delete button if comment owner */}
+                    {!isTemp && currentUserId === comment.user_id && (
+                      <button
+                        onClick={() => handleDelete(comment.id)}
+                        className="text-slate-400 hover:text-rose-500 transition-colors duration-150 p-1 rounded-lg hover:bg-rose-50 cursor-pointer"
+                        title="Delete comment"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     )}
-                    <span className="text-[11px] text-slate-400 font-medium select-none">
-                      • {formatRelativeTime(comment.created_at)}
-                    </span>
                   </div>
                   <p className="text-[13.5px] text-slate-700 leading-relaxed mt-1 whitespace-pre-wrap">
                     {comment.content}

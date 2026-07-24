@@ -1,6 +1,6 @@
 const API_BASE = `${import.meta.env.VITE_BASE_API_URL}/campaigns`;
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("token");
   return {
     "Content-Type": "application/json",
@@ -14,10 +14,10 @@ export const fetchCampaigns = async (page = 1, limit = 10, status = "all") => {
   if (!res.ok || !data.success) {
     throw new Error(data.message || "Failed to fetch campaigns");
   }
-  return data.data; // { campaigns, pagination }
+  return data.data;
 };
 
-export const createCampaign = async (campaignData) => {
+export const createCampaign = async (campaignData: any) => {
   const res = await fetch(API_BASE, {
     method: "POST",
     headers: getAuthHeaders(),
@@ -30,7 +30,7 @@ export const createCampaign = async (campaignData) => {
   return data.data;
 };
 
-export const fetchCampaignById = async (id) => {
+export const fetchCampaignById = async (id: string | number) => {
   const res = await fetch(`${API_BASE}/${id}`);
   const data = await res.json();
   if (!res.ok || !data.success) {
@@ -39,7 +39,7 @@ export const fetchCampaignById = async (id) => {
   return data.data;
 };
 
-export const updateCampaign = async (id, campaignData) => {
+export const updateCampaign = async (id: string | number, campaignData: any) => {
   const res = await fetch(`${API_BASE}/${id}`, {
     method: "PUT",
     headers: getAuthHeaders(),

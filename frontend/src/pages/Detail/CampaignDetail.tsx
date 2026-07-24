@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, Heart } from "lucide-react";
 import { Navbar } from "../Feed/components/Navbar";
 import { Sidebar } from "../Feed/components/Sidebar";
 import { fetchCampaignById } from "../../features/creator/creatorAPI";
 import { formatRelativeTime } from "../../utils";
 import { ImageWithFallback } from "../Feed/components/ImageFallback/ImageWithFallback";
-import DonationModal from "../../components/DonationModal";
+import { DonationModal } from "../../components/DonationModal";
 import { CommentSection } from "./CommentSection";
+import { useLike } from "../../features/likes/useLike";
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
+  const numericId = id ? parseInt(id, 10) : 0;
+  const { liked, likesCount, toggleLike } = useLike("campaign", numericId);
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,7 +187,21 @@ export default function CampaignDetail() {
 
               {/* Action Buttons */}
               <div className="flex justify-between items-center border-t border-slate-100 pt-5">
-                <div></div>
+                <button
+                  onClick={toggleLike}
+                  className={`flex items-center space-x-2 transition-colors group px-3 py-1.5 rounded-full cursor-pointer ${
+                    liked
+                      ? "text-rose-500 hover:bg-rose-50"
+                      : "text-slate-500 hover:text-rose-500 hover:bg-rose-50"
+                  }`}
+                >
+                  <Heart
+                    className={`w-5 h-5 transition-transform group-active:scale-90 ${
+                      liked ? "fill-current" : ""
+                    }`}
+                  />
+                  <span className="font-semibold text-sm">{likesCount}</span>
+                </button>
                 {isOwner ? (
                   <button
                     onClick={() => navigate("/creator/dashboard")}

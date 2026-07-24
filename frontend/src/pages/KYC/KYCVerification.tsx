@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ShieldCheck, ArrowLeft, FileText, Camera, Clock, CheckCircle2 } from "lucide-react";
 import { Navbar } from "../Feed/components/Navbar";
 import { Sidebar } from "../Feed/components/Sidebar";
@@ -13,6 +13,9 @@ export default function KYCVerification() {
     { icon: Clock, title: "Review Process", desc: "Our team reviews within 24–48 hours" },
     { icon: CheckCircle2, title: "Get Approved", desc: "Start creating campaigns right away" },
   ];
+
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/feed";
 
   return (
     <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 overflow-hidden">
@@ -30,7 +33,7 @@ export default function KYCVerification() {
           {/* Back Button - Near left sidebar */}
           <div className="w-full pt-8 px-8 lg:px-12">
             <button
-              onClick={() => navigate("/feed")}
+              onClick={() => navigate(returnTo)}
               className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors group w-fit"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />

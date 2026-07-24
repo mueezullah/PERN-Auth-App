@@ -4,6 +4,34 @@ import { Plus, User, Heart, MessageCircle, Share2, Clock } from "lucide-react";
 import { clsx } from "clsx";
 import { formatRelativeTime } from "../../utils";
 import { CreateThreadModal } from "../Feed/components/CreateThreadModal";
+import { useLike } from "../../features/likes/useLike";
+
+function ProfileLikeButton({
+  type,
+  id,
+  initialLikes = 0,
+}: {
+  type: "post" | "campaign";
+  id: number;
+  initialLikes: number;
+}) {
+  const { liked, likesCount, loading, toggleLike } = useLike(type, id);
+  const displayCount = loading ? initialLikes : likesCount;
+
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleLike();
+      }}
+      className={`inline-flex items-center gap-2 text-sm transition-colors cursor-pointer ${liked ? "text-rose-500 font-semibold" : "text-slate-500 hover:text-slate-900"
+        }`}
+    >
+      <Heart className={`w-4 h-4 ${liked ? "fill-current" : ""}`} />
+      <span>{displayCount}</span>
+    </span>
+  );
+}
 
 const sectionData = [
   { key: "Posts", title: "Posts" },
@@ -241,11 +269,11 @@ export function ProfileFeed({
     const now = new Date();
     const daysLeft = deadline
       ? Math.max(
-          0,
-          Math.ceil(
-            (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-          ),
-        )
+        0,
+        Math.ceil(
+          (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+        ),
+      )
       : null;
     const statusLabel =
       item.status === "completed" || raised >= goal
@@ -255,10 +283,23 @@ export function ProfileFeed({
     return { raised, goal, progress, daysLeft, statusLabel };
   };
 
+  const role = localStorage.getItem("role");
+
+  const handleCampaignClick = () => {
+    if (role === "admin" || role === "fundraiser") {
+      navigate("/create-campaign", { state: { returnTo: location.pathname } });
+    } else {
+      navigate(`/kyc-verification`, { state: { returnTo: location.pathname } });
+    }
+  };
+
   const renderGridItem = (item: any, type: string) => {
     if (type === "Posts") {
       return (
-        <div className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100">
+        <div
+          onClick={() => navigate(`/posts/${item.id}`)}
+          className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100"
+        >
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-500 text-sm">
@@ -298,13 +339,20 @@ export function ProfileFeed({
             </div>
           </div>
           <div className="flex items-center justify-start gap-4 pt-3 text-slate-500">
-            <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
-              <Heart className="w-4 h-4" />
-              <span>{item.likes ?? 0}</span>
-            </button>
-            <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
+            <ProfileLikeButton
+              type="post"
+              id={item.id}
+              initialLikes={item.likes_count ?? item.likes ?? 0}
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/posts/${item.id}`);
+              }}
+              className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors cursor-pointer"
+            >
               <MessageCircle className="w-4 h-4" />
-              <span>{item.comments ?? 0}</span>
+              <span>{item.comments_count ?? item.comments ?? 0}</span>
             </button>
             <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
               <Share2 className="w-4 h-4" />
@@ -319,7 +367,10 @@ export function ProfileFeed({
       getCampaignProgress(item);
 
     return (
-      <div className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100">
+      <div
+        onClick={() => navigate(`/campaigns/${item.id}`)}
+        className="cursor-pointer rounded-3xl px-4 py-4 transition-colors hover:bg-slate-100"
+      >
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-500 text-sm">
@@ -404,13 +455,20 @@ export function ProfileFeed({
           </div>
         </div>
         <div className="flex items-center justify-start gap-4 pt-3 text-slate-500">
-          <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
-            <Heart className="w-4 h-4" />
-            <span>{item.likes ?? 0}</span>
-          </button>
-          <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
+          <ProfileLikeButton
+            type="campaign"
+            id={item.id}
+            initialLikes={item.likes_count ?? item.likes ?? 0}
+          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/campaigns/${item.id}`);
+            }}
+            className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors cursor-pointer"
+          >
             <MessageCircle className="w-4 h-4" />
-            <span>{item.comments ?? 0}</span>
+            <span>{item.comments_count ?? item.comments ?? 0}</span>
           </button>
           <button className="flex items-center gap-2 text-sm hover:text-slate-900 transition-colors">
             <Share2 className="w-4 h-4" />
@@ -472,13 +530,14 @@ export function ProfileFeed({
             onClick={() =>
               activeTab === "Posts"
                 ? setIsThreadModalOpen(true)
-                : navigate("/create-campaign")
+                : handleCampaignClick()
             }
             className="flex items-center space-x-1.5 px-4 py-2 rounded-full border border-slate-300 cursor-pointer hover:bg-slate-200 transition-colors"
           >
             <Plus className="w-4 h-4 text-slate-700" />
             <span className="text-[14px] font-semibold text-slate-700">
-              {activeTab === "Posts" ? "New Posts" : "New Campaign"}
+              {activeTab === "Posts" ? "Create Post" :
+                "Create Campaign"}
             </span>
           </button>
         )}

@@ -19,6 +19,7 @@ import { handleSuccess, handleError } from "../../../utils";
 import { ImageWithFallback } from "./ImageFallback/ImageWithFallback";
 import DonationModal from "../../../components/DonationModal";
 import { useNavigate } from "react-router-dom";
+import { useLike } from "../../../features/likes/useLike";
 
 declare global {
   interface ImportMetaEnv {
@@ -77,6 +78,11 @@ export function FeedCard({
   const [isDonationOpen, setIsDonationOpen] = useState(false);
   const navigate = useNavigate();
 
+  const numericId = parseInt(id.replace(/\D/g, ""), 10) || 0;
+  const targetType = type === "thread" ? "post" : type;
+  const { liked, likesCount, loading, toggleLike } = useLike(targetType, numericId);
+  const displayLikes = loading ? (stats.likes ?? likesCount) : likesCount;
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const isCampaign =
@@ -106,12 +112,12 @@ export function FeedCard({
   // Calculate days remaining until deadline
   const daysLeft = deadline
     ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(deadline).getTime() - now.getTime()) /
-            (1000 * 60 * 60 * 24),
-        ),
-      )
+      0,
+      Math.ceil(
+        (new Date(deadline).getTime() - now.getTime()) /
+        (1000 * 60 * 60 * 24),
+      ),
+    )
     : null;
   const isCampaignEnded = deadline ? new Date(deadline) < now : false;
   const isCampaignCompleted =
@@ -204,7 +210,7 @@ export function FeedCard({
   };
 
   return (
-    <article 
+    <article
       onClick={handleCardClick}
       className="bg-white rounded-3xl shadow-sm border mb-8 border-slate-200/60 p-5 sm:p-6 transition-all hover:shadow-md cursor-pointer hover:border-indigo-100"
     >
@@ -260,17 +266,16 @@ export function FeedCard({
               e.stopPropagation();
               setIsMenuOpen(!isMenuOpen);
             }}
-            className={`cursor-pointer p-2 rounded-full transition-all duration-200 ${
-              isMenuOpen
+            className={`cursor-pointer p-2 rounded-full transition-all duration-200 ${isMenuOpen
                 ? "text-indigo-600 bg-indigo-50/80 scale-105"
                 : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
-            }`}
+              }`}
           >
             <MoreHorizontal className="w-5 h-5" />
           </button>
 
           {isMenuOpen && (
-            <div 
+            <div
               onClick={(e) => e.stopPropagation()}
               className="absolute right-0 mt-2 w-52 bg-[#1a1a1b] border border-slate-700/50 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.5)] py-2 z-50 text-[#d7dadc] animate-in fade-in slide-in-from-top-3 duration-250"
             >
@@ -401,16 +406,28 @@ export function FeedCard({
       {/* Actions */}
       <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:pt-4 mt-2">
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <button 
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center space-x-2 text-slate-500 hover:text-rose-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-rose-50"
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleLike();
+            }}
+            className={`flex items-center space-x-2 transition-colors group px-2 py-1.5 rounded-full ${
+              liked
+                ? "text-rose-500 hover:bg-rose-50"
+                : "text-slate-500 hover:text-rose-500 hover:bg-rose-50"
+            }`}
           >
-            <Heart className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
+            <Heart
+              className={`w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90 ${
+                liked ? "fill-current" : ""
+              }`}
+            />
             <span className="font-semibold text-[13px] sm:text-sm">
-              {stats.likes}
+              {displayLikes}
             </span>
           </button>
-          <button 
+
+          <button
             onClick={(e) => e.stopPropagation()}
             className="flex items-center space-x-2 text-slate-500 hover:text-indigo-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-indigo-50"
           >
@@ -419,13 +436,13 @@ export function FeedCard({
               {stats.comments}
             </span>
           </button>
-          <button 
+          <button
             onClick={(e) => e.stopPropagation()}
             className="flex items-center space-x-2 text-slate-500 hover:text-emerald-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-emerald-50"
           >
             <Share2 className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-active:scale-90" />
           </button>
-          <button 
+          <button
             onClick={(e) => e.stopPropagation()}
             className="flex items-center space-x-2 text-slate-500 hover:text-amber-500 transition-colors group px-2 py-1.5 rounded-full hover:bg-amber-50"
           >
@@ -438,11 +455,10 @@ export function FeedCard({
           (isDonateDisabled ? (
             <span
               onClick={(e) => e.stopPropagation()}
-              className={`px-5 py-2 sm:px-6 sm:py-2.5 font-extrabold text-[13px] sm:text-[14px] rounded-full border select-none inline-flex items-center justify-center ${
-                isCampaignCompleted
+              className={`px-5 py-2 sm:px-6 sm:py-2.5 font-extrabold text-[13px] sm:text-[14px] rounded-full border select-none inline-flex items-center justify-center ${isCampaignCompleted
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : "bg-rose-50 text-rose-700 border-rose-200"
-              }`}
+                }`}
             >
               {isCampaignCompleted ? "complete" : "InComplete"}
             </span>

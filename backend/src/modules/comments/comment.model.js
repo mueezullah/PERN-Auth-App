@@ -61,3 +61,19 @@ export const countByTarget = async (targetType, targetId) => {
   const result = await pool.query(query, [targetType, targetId]);
   return parseInt(result.rows[0].count, 10);
 };
+
+export const findById = async (commentId) => {
+  const query = `
+    SELECT * FROM comments WHERE id = $1;
+  `;
+  const result = await pool.query(query, [commentId]);
+  return result.rows[0];
+};
+
+export const deleteById = async (commentId) => {
+  const query = `
+    DELETE FROM comments WHERE id = $1 RETURNING *;
+  `;
+  const result = await pool.query(query, [commentId]);
+  return result.rows[0];
+};
