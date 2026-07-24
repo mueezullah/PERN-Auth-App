@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
   MessageCircle,
@@ -29,6 +29,7 @@ export function Navbar({
   setIsAuthenticated?: (value: boolean) => void;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false);
@@ -40,6 +41,7 @@ export function Navbar({
   const createDropdownRef = useRef<HTMLDivElement>(null);
 
   const role = localStorage.getItem("role");
+  const username = localStorage.getItem("username");
 
   useEffect(() => {
     const handleAvatarUpdate = () => {
@@ -83,10 +85,10 @@ export function Navbar({
   const handleCampaignClick = () => {
     setIsCreateDropdownOpen(false);
     if (role === "fundraiser" || role === "admin") {
-      navigate("/create-campaign");
+      navigate("/create-campaign", { state: { returnTo: location.pathname } });
     } else {
       // 'user' role must complete KYC before creating campaigns
-      navigate("/kyc-verification");
+      navigate("/kyc-verification", { state: { returnTo: location.pathname } });
     }
   };
 

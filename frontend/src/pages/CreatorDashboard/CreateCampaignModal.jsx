@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { handleError } from "../../utils";
 import { useCreateCampaign } from "../../features/creator/creatorSlice";
@@ -24,6 +24,8 @@ const CreateCampaignModal = ({
   onSuccess,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/feed";
   const { create, loading: createLoading } = useCreateCampaign();
   const [updateLoading, setUpdateLoading] = useState(false);
 
@@ -124,7 +126,7 @@ const CreateCampaignModal = ({
         // --- CREATE ---
         await create(payload);
         showMinimalToast("Campaign Created");
-        setTimeout(() => navigate("/feed"), 1000);
+        setTimeout(() => navigate(returnTo), 1000);
       }
     } catch (err) {
       handleError(err.message || `Failed to ${editMode ? "update" : "create"} campaign`);
@@ -311,7 +313,7 @@ const CreateCampaignModal = ({
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md z-50 px-4 md:px-8 flex items-center border-b border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <button
-          onClick={() => navigate("/feed")}
+          onClick={() => navigate(returnTo)}
           className="p-2 text-slate-500 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors mr-4"
         >
           <X className="w-5 h-5" />
