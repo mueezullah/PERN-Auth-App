@@ -1,7 +1,10 @@
-import React from "react";
-import { MessageCircle, Image as ImageIcon, Plus, Edit } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Image as ImageIcon, Plus, Edit } from "lucide-react";
+import { FollowButton } from "../../components/FollowButton";
+import { FollowListModal } from "../../components/FollowListModal";
 
 type ProfileStats = {
+  id?: number;
   posts: number;
   campaigns: number;
   backedProjects: number;
@@ -18,13 +21,22 @@ const formatNameWithRole = (name: string, role?: string) => {
 
 export function ProfileRightSidebar({
   name,
+  username,
+  userId: propUserId,
   profileStats,
   isOwnProfile = true,
 }: {
   name?: string;
+  username?: string;
+  userId?: number;
   profileStats?: ProfileStats | null;
   isOwnProfile?: boolean;
 }) {
+  const [followersCount, setFollowersCount] = useState<number>(0);
+  const [followingCount, setFollowingCount] = useState<number>(0);
+  const [modalType, setModalType] = useState<"followers" | "following" | null>(null);
+  const [resolvedUserId, setResolvedUserId] = useState<number | null>(propUserId || profileStats?.id || null);
+
   const displayName = isOwnProfile
     ? formatNameWithRole(name || "User", profileStats?.role)
     : (name || "User");
@@ -44,6 +56,50 @@ export function ProfileRightSidebar({
     maximumFractionDigits: 0,
   }).format(totalContributed);
 
+  // Resolve userId if not directly supplied
+  useEffect(() => {
+    if (propUserId) {
+      setResolvedUserId(propUserId);
+    } else if (profileStats?.id) {
+      setResolvedUserId(profileStats.id);
+    } else if (username) {
+      fetch(`${import.meta.env.VITE_BASE_API_URL}/users/${username}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data?.id) {
+            setResolvedUserId(data.data.id);
+          }
+        })
+        .catch((err) => console.error("Error resolving user id:", err));
+    }
+  }, [propUserId, profileStats, username]);
+
+  // Fetch follow counts
+  useEffect(() => {
+    if (!resolvedUserId) return;
+
+    async function fetchFollowCounts() {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${import.meta.env.VITE_BASE_API_URL}/follows/${resolvedUserId}/status`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setFollowersCount(data.followersCount || 0);
+          setFollowingCount(data.followingCount || 0);
+        }
+      } catch (err) {
+        console.error("Failed to load follow counts in sidebar:", err);
+      }
+    }
+
+    fetchFollowCounts();
+  }, [resolvedUserId]);
+
   return (
     <div className="w-full py-8 pr-4 flex flex-col space-y-4">
       <div className="bg-white rounded-[20px] shadow-sm border border-slate-200/60 overflow-hidden">
@@ -62,27 +118,38 @@ export function ProfileRightSidebar({
             {displayName}
           </h2>
 
-          <div className="flex space-x-3 mb-6 mt-4">
+          {/* Action Buttons Row */}
+          <div className="flex flex-wrap items-center gap-3 mb-6 mt-4">
             {isOwnProfile && (
-              <button className="flex items-center space-x-2 w-fit bg-slate-100 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-1.5 rounded-full transition-colors">
+              <button className="flex items-center space-x-2 w-fit bg-slate-100 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-1.5 rounded-full transition-colors cursor-pointer">
                 <Edit className="w-4 h-4" />
                 <span>Update</span>
               </button>
             )}
-            {!isOwnProfile && (
-              <button className="flex items-center space-x-2 w-fit bg-slate-100 hover:bg-slate-200/70 text-slate-900 font-semibold text-[14px] px-4 py-1.5 rounded-full transition-colors">
-                <MessageCircle className="w-4 h-4" />
-                <span>Message</span>
-              </button>
+            {!isOwnProfile && resolvedUserId && (
+              <FollowButton
+                targetUserId={resolvedUserId}
+                onFollowChange={(_, fCount, fgCount) => {
+                  setFollowersCount(fCount);
+                  setFollowingCount(fgCount);
+                }}
+              />
             )}
           </div>
 
+          {/* Followers & Following Counts */}
           <div className="flex items-center space-x-4 mb-6">
-            <p className="text-[14px] font-bold text-slate-700 hover:underline cursor-pointer">
-              0 following
+            <p
+              onClick={() => setModalType("following")}
+              className="text-[14px] font-bold text-slate-700 hover:underline cursor-pointer transition-colors"
+            >
+              {followingCount} following
             </p>
-            <p className="text-[14px] font-bold text-slate-700 hover:underline cursor-pointer">
-              0 followers
+            <p
+              onClick={() => setModalType("followers")}
+              className="text-[14px] font-bold text-slate-700 hover:underline cursor-pointer transition-colors"
+            >
+              {followersCount} followers
             </p>
           </div>
 
@@ -134,7 +201,7 @@ export function ProfileRightSidebar({
 
           <div className="border-t border-slate-200/60 my-2 -mx-5 px-5" />
 
-          {/* Social Links Section (Replacing Achievements) */}
+          {/* Social Links Section */}
           <div className="py-2">
             <h3 className="text-[12px] font-semibold text-slate-500 tracking-wide uppercase mb-3">
               Social Links
@@ -148,6 +215,16 @@ export function ProfileRightSidebar({
           </div>
         </div>
       </div>
+
+      {/* Followers / Following List Modal */}
+      {resolvedUserId && modalType && (
+        <FollowListModal
+          isOpen={Boolean(modalType)}
+          type={modalType}
+          userId={resolvedUserId}
+          onClose={() => setModalType(null)}
+        />
+      )}
     </div>
   );
 }
