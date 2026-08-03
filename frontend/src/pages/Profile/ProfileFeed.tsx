@@ -106,7 +106,7 @@ export function ProfileFeed({
         const nextUserId = profileData.data.id;
         setUserId(nextUserId);
 
-        const [postsRes, campaignsRes, followsRes] = await Promise.all([
+        const [postsRes, campaignsRes] = await Promise.all([
           fetch(
             `${import.meta.env.VITE_BASE_API_URL}/posts/user/${nextUserId}?page=1&limit=${POSTS_PAGE_SIZE}`,
           ),
@@ -120,7 +120,6 @@ export function ProfileFeed({
 
         const postsData = await postsRes.json();
         const campaignsData = await campaignsRes.json();
-        const followsData = await followsRes.json();
 
         if (!postsRes.ok || !postsData.success) {
           throw new Error(postsData.message || "Unable to load profile posts");

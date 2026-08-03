@@ -41,6 +41,7 @@ export function FollowListModal({ isOpen, onClose, userId, type }: FollowListMod
           setError(data.message || "Failed to load list");
         }
       } catch (err) {
+        console.error("Failed to load follow list:", err);
         setError("Error connecting to server");
       } finally {
         setLoading(false);

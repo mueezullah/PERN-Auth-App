@@ -16,11 +16,6 @@ export function FollowButton({ targetUserId, onFollowChange, className = "" }: F
     const token = localStorage.getItem("token");
     const currentUserId = Number(localStorage.getItem("userId")); // Assuming stored during auth
 
-    // Hide button if viewing own profile
-    if (currentUserId && currentUserId === targetUserId) {
-        return null;
-    }
-
     // Fetch initial follow status
     useEffect(() => {
         async function fetchFollowStatus() {
@@ -48,6 +43,11 @@ export function FollowButton({ targetUserId, onFollowChange, className = "" }: F
 
         fetchFollowStatus();
     }, [targetUserId, token]);
+
+    // Hide button if viewing own profile
+    if (currentUserId && currentUserId === targetUserId) {
+        return null;
+    }
 
     const handleToggleFollow = async (e: React.MouseEvent) => {
         e.stopPropagation();
