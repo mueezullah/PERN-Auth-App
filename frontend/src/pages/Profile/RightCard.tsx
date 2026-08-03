@@ -58,6 +58,7 @@ export function ProfileRightSidebar({
 
   // Resolve userId if not directly supplied
   useEffect(() => {
+    async function fetchId(){
     if (propUserId) {
       setResolvedUserId(propUserId);
     } else if (profileStats?.id) {
@@ -72,6 +73,8 @@ export function ProfileRightSidebar({
         })
         .catch((err) => console.error("Error resolving user id:", err));
     }
+  }
+  fetchId();
   }, [propUserId, profileStats, username]);
 
   // Fetch follow counts

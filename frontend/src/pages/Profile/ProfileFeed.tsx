@@ -76,9 +76,6 @@ export function ProfileFeed({
     null,
   );
   const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
-  const [followersCount, setFollowersCount] = useState<number>(0);
-  const [followingCount, setFollowingCount] = useState<number>(0);
-  const [modalType, setModalType] = useState<"followers" | "following" | null>(null);
   const displayName = name || username || "User";
   const avatar = isOwnProfile ? localStorage.getItem("avatar") : null;
   const observer = useRef<IntersectionObserver | null>(null);
@@ -132,11 +129,6 @@ export function ProfileFeed({
           throw new Error(
             campaignsData.message || "Unable to load profile campaigns",
           );
-        }
-
-        if (followsRes.ok && followsData.success) {
-          setFollowersCount(followsData.followersCount || 0);
-          setFollowingCount(followsData.followingCount || 0);
         }
 
         setPosts(postsData.data.posts || []);
