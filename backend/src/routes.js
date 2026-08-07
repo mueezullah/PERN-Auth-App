@@ -6,6 +6,7 @@ import paymentRoutes from "./modules/payments/payments.route.js";
 import userRoutes from "./modules/users/user.routes.js";
 import commentRoutes from "./modules/comments/comment.routes.js";
 import likeRoutes from "./modules/likes/like.routes.js";
+import followRoutes from "./modules/follows/follow.routes.js";
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use("/payments", paymentRoutes);
 router.use("/users", userRoutes);
 router.use("/comments", commentRoutes);
 router.use("/likes", likeRoutes);
+router.use("/follows", followRoutes);
 
 export default router;

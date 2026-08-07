@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  name         String
+  username     String     @unique @db.VarChar(20)
+  email        String     @unique
+  password     String
+  role         String     @default("user") @db.VarChar(20)
+  kyc_verified Boolean?   @default(false)
+  created_at   DateTime   @default(now())
+
+  campaigns    Campaign[]
+  posts        Post[]
+  donations    Donation[]
+  comments     Comment[]
+  likes        Like[]
+
+  followers    Follow[]   @relation("FollowingRelation")
+  following    Follow[]   @relation("FollowerRelation")
+
+  @@map("users")
+}
+
+model Campaign {
+  id             Int        @id @default(autoincrement())
+  user_id        Int
+  title          String     @db.VarChar(255)
+  description    String
+  goal_amount    Decimal    @db.Decimal(15, 2)
+  current_amount Decimal?   @default(0) @db.Decimal(15, 2)
+  deadline       DateTime
+  media_url      String?    @db.VarChar(255)
+  status         String?    @default("active") @db.VarChar(20)
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @default(now()) @updatedAt
+
+  user           User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  donations      Donation[]
+
+  @@index([user_id], map: "idx_campaigns_user_id")
+  @@index([status], map: "idx_campaigns_status")
+  @@index([deadline], map: "idx_campaigns_deadline")
+  @@map("campaigns")
+}
+
+model Post {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  content    String
+  media_url  String?  @db.VarChar(255)
+  status     String?  @default("active") @db.VarChar(20)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id], map: "idx_posts_user_id")
+  @@index([created_at(sort: Desc)], map: "idx_posts_created_at")
+  @@map("posts")
+}
+
+model Donation {
+  id                       Int      @id @default(autoincrement())
+  campaign_id              Int
+  donor_id                 Int
+  amount                   Decimal  @db.Decimal(15, 2)
+  stripe_payment_intent_id String?  @unique @db.VarChar(255)
+  status                   String?  @default("pending") @db.VarChar(50)
+  created_at               DateTime @default(now())
+  updated_at               DateTime @default(now()) @updatedAt
+
+  campaign                 Campaign @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  donor                    User     @relation(fields: [donor_id], references: [id], onDelete: Cascade)
+
+  @@index([campaign_id], map: "idx_donations_campaign_id")
+  @@index([donor_id], map: "idx_donations_donor_id")
+  @@index([status], map: "idx_donations_status")
+  @@map("donations")
+}
+
+model Comment {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  target_type String   @db.VarChar(20)
+  target_id   Int
+  content     String
+  created_at  DateTime @default(now())
+
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([target_type, target_id], map: "idx_comments_target")
+  @@index([created_at(sort: Asc)], map: "idx_comments_created_at")
+  @@map("comments")
+}
+
+model Like {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  target_type String   @db.VarChar(20)
+  target_id   Int
+  created_at  DateTime @default(now())
+
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, target_type, target_id])
+  @@index([target_type, target_id], map: "idx_likes_target")
+  @@index([user_id], map: "idx_likes_user")
+  @@map("likes")
+}
+
+model Follow {
+  id           Int      @id @default(autoincrement())
+  follower_id  Int
+  following_id Int
+  created_at   DateTime @default(now())
+
+  follower     User     @relation("FollowerRelation", fields: [follower_id], references: [id], onDelete: Cascade)
+  following    User     @relation("FollowingRelation", fields: [following_id], references: [id], onDelete: Cascade)
+
+  @@unique([follower_id, following_id], map: "unique_follow")
+  @@index([follower_id], map: "idx_follows_follower")
+  @@index([following_id], map: "idx_follows_following")
+  @@map("follows")
+}

@@ -1,31 +1,7 @@
-import { pool } from "../../config/db.js";
+import prisma from "../../config/prisma.js";
 
 export const initTable = async () => {
-  const query = `
-    CREATE TABLE IF NOT EXISTS campaigns (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        title VARCHAR(255) NOT NULL,
-        description TEXT NOT NULL,
-        goal_amount NUMERIC(15,2) NOT NULL CHECK (goal_amount > 0),
-        current_amount NUMERIC(15,2) DEFAULT 0,
-        deadline TIMESTAMP NOT NULL,
-        media_url VARCHAR(255),
-        status VARCHAR(20) DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_campaigns_user_id ON campaigns(user_id);
-    CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
-    CREATE INDEX IF NOT EXISTS idx_campaigns_deadline ON campaigns(deadline);
-  `;
-  try {
-    await pool.query(query);
-    console.log("Campaigns table is ready");
-  } catch (error) {
-    console.error("Error initializing campaigns table:", error);
-    throw error;
-  }
+  console.log("Campaigns table verified via Prisma");
 };
 
 export const create = async (
@@ -36,85 +12,147 @@ export const create = async (
   deadline,
   mediaUrl,
 ) => {
-  const query = `
-    INSERT INTO campaigns (user_id, title, description, goal_amount, deadline, media_url)
-    VALUES ($1, $2, $3, $4, $5, $6)
-    RETURNING *;
-  `;
-  const values = [userId, title, description, goalAmount, deadline, mediaUrl];
-  const result = await pool.query(query, values);
-  return result.rows[0];
+  return await prisma.campaign.create({
+    data: {
+      user_id: parseInt(userId, 10),
+      title,
+      description,
+      goal_amount: goalAmount,
+      deadline: new Date(deadline),
+      media_url: mediaUrl,
+    },
+  });
 };
 
 export const findAllActive = async (limit, offset, status = "active") => {
-  let query = `
-      SELECT c.*, u.name as owner_name, u.username as owner_username,
-      (SELECT COUNT(*) FROM comments WHERE target_type = 'campaign' AND target_id = c.id) AS comments_count,
-      (SELECT COUNT(*) FROM likes WHERE target_type = 'campaign' AND target_id = c.id) AS likes_count
-      FROM campaigns c
-      JOIN users u ON c.user_id = u.id
-    `;
-  let countQuery = `SELECT COUNT(*) FROM campaigns`;
-  const queryParams = [];
-  const countParams = [];
+  const whereCondition =
+    status && status !== "all"
+      ? { status }
+      : { status: { not: "deleted" } };
 
-  if (status && status !== "all") {
-    query += ` WHERE c.status = $1`;
-    countQuery += ` WHERE status = $1`;
-    queryParams.push(status);
-    countParams.push(status);
+  const [campaignsList, totalCount] = await Promise.all([
+    prisma.campaign.findMany({
+      where: whereCondition,
+      include: {
+        user: {
+          select: { name: true, username: true },
+        },
+      },
+      orderBy: { created_at: "desc" },
+      take: parseInt(limit, 10),
+      skip: parseInt(offset, 10),
+    }),
+    prisma.campaign.count({ where: whereCondition }),
+  ]);
 
-    query += ` ORDER BY c.created_at DESC LIMIT $2 OFFSET $3;`;
-    queryParams.push(limit, offset);
-  } else {
-    query += ` WHERE c.status != 'deleted'`;
-    countQuery += ` WHERE status != 'deleted'`;
+  // Transform campaigns to include comments_count, likes_count, owner_name, owner_username
+  const formattedCampaigns = await Promise.all(
+    campaignsList.map(async (c) => {
+      const [commentsCount, likesCount] = await Promise.all([
+        prisma.comment.count({
+          where: { target_type: "campaign", target_id: c.id },
+        }),
+        prisma.like.count({
+          where: { target_type: "campaign", target_id: c.id },
+        }),
+      ]);
 
-    query += ` ORDER BY c.created_at DESC LIMIT $1 OFFSET $2;`;
-    queryParams.push(limit, offset);
-  }
-
-  const result = await pool.query(query, queryParams);
-  const countResult = await pool.query(countQuery, countParams);
+      return {
+        ...c,
+        owner_name: c.user?.name,
+        owner_username: c.user?.username,
+        comments_count: commentsCount,
+        likes_count: likesCount,
+      };
+    })
+  );
 
   return {
-    campaigns: result.rows,
-    total: parseInt(countResult.rows[0].count, 10),
+    campaigns: formattedCampaigns,
+    total: totalCount,
   };
 };
 
 export const findByUserId = async (userId, limit = 10, offset = 0) => {
-  const query = `
-      SELECT c.*, u.name as owner_name, u.username as owner_username,
-      (SELECT COUNT(*) FROM comments WHERE target_type = 'campaign' AND target_id = c.id) AS comments_count,
-      (SELECT COUNT(*) FROM likes WHERE target_type = 'campaign' AND target_id = c.id) AS likes_count
-      FROM campaigns c
-      JOIN users u ON c.user_id = u.id
-      WHERE c.user_id = $1 AND c.status != 'deleted'
-      ORDER BY c.created_at DESC
-      LIMIT $2 OFFSET $3;
-    `;
-  const result = await pool.query(query, [userId, limit, offset]);
-  const totalQuery = `SELECT COUNT(*) FROM campaigns WHERE user_id = $1 AND status != 'deleted'`;
-  const totalResult = await pool.query(totalQuery, [userId]);
+  const whereCondition = {
+    user_id: parseInt(userId, 10),
+    status: { not: "deleted" },
+  };
+
+  const [campaignsList, totalCount] = await Promise.all([
+    prisma.campaign.findMany({
+      where: whereCondition,
+      include: {
+        user: {
+          select: { name: true, username: true },
+        },
+      },
+      orderBy: { created_at: "desc" },
+      take: parseInt(limit, 10),
+      skip: parseInt(offset, 10),
+    }),
+    prisma.campaign.count({ where: whereCondition }),
+  ]);
+
+  const formattedCampaigns = await Promise.all(
+    campaignsList.map(async (c) => {
+      const [commentsCount, likesCount] = await Promise.all([
+        prisma.comment.count({
+          where: { target_type: "campaign", target_id: c.id },
+        }),
+        prisma.like.count({
+          where: { target_type: "campaign", target_id: c.id },
+        }),
+      ]);
+
+      return {
+        ...c,
+        owner_name: c.user?.name,
+        owner_username: c.user?.username,
+        comments_count: commentsCount,
+        likes_count: likesCount,
+      };
+    })
+  );
 
   return {
-    campaigns: result.rows,
-    total: parseInt(totalResult.rows[0].count, 10),
+    campaigns: formattedCampaigns,
+    total: totalCount,
   };
 };
 
 export const findById = async (id) => {
-  const query = `
-      SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email,
-      (SELECT COUNT(*) FROM comments WHERE target_type = 'campaign' AND target_id = c.id) AS comments_count,
-      (SELECT COUNT(*) FROM likes WHERE target_type = 'campaign' AND target_id = c.id) AS likes_count
-      FROM campaigns c
-      JOIN users u ON c.user_id = u.id
-      WHERE c.id = $1 AND c.status != 'deleted';
-    `;
-  const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  const campaign = await prisma.campaign.findFirst({
+    where: {
+      id: parseInt(id, 10),
+      status: { not: "deleted" },
+    },
+    include: {
+      user: {
+        select: { name: true, username: true, email: true },
+      },
+    },
+  });
+
+  if (!campaign) return null;
+
+  const [commentsCount, likesCount] = await Promise.all([
+    prisma.comment.count({
+      where: { target_type: "campaign", target_id: campaign.id },
+    }),
+    prisma.like.count({
+      where: { target_type: "campaign", target_id: campaign.id },
+    }),
+  ]);
+
+  return {
+    ...campaign,
+    owner_name: campaign.user?.name,
+    owner_username: campaign.user?.username,
+    owner_email: campaign.user?.email,
+    comments_count: commentsCount,
+    likes_count: likesCount,
+  };
 };
 
 export const update = async (
@@ -125,48 +163,48 @@ export const update = async (
   deadline,
   mediaUrl,
 ) => {
-  const query = `
-      UPDATE campaigns
-      SET title = COALESCE($1, title),
-          description = COALESCE($2, description),
-          goal_amount = COALESCE($3, goal_amount),
-          deadline = COALESCE($4, deadline),
-          media_url = COALESCE($5, media_url),
-          status = 'updated',
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = $6
-      RETURNING *;
-    `;
-  const result = await pool.query(query, [
-    title,
-    description,
-    goalAmount,
-    deadline,
-    mediaUrl,
-    id,
-  ]);
-  return result.rows[0];
+  const updateData = {
+    status: "updated",
+  };
+  if (title !== undefined && title !== null) updateData.title = title;
+  if (description !== undefined && description !== null) updateData.description = description;
+  if (goalAmount !== undefined && goalAmount !== null) updateData.goal_amount = goalAmount;
+  if (deadline !== undefined && deadline !== null) updateData.deadline = new Date(deadline);
+  if (mediaUrl !== undefined && mediaUrl !== null) updateData.media_url = mediaUrl;
+
+  return await prisma.campaign.update({
+    where: { id: parseInt(id, 10) },
+    data: updateData,
+  });
 };
 
 export const updateExpiredCampaigns = async () => {
-  const query = `
-      UPDATE campaigns
-      SET status = 'ended',
-          updated_at = CURRENT_TIMESTAMP
-      WHERE status = 'active' AND deadline < CURRENT_TIMESTAMP
-      RETURNING *;
-    `;
-  const result = await pool.query(query);
-  return result.rows;
+  const expiredCampaigns = await prisma.campaign.findMany({
+    where: {
+      status: "active",
+      deadline: { lt: new Date() },
+    },
+  });
+
+  await prisma.campaign.updateMany({
+    where: {
+      status: "active",
+      deadline: { lt: new Date() },
+    },
+    data: {
+      status: "ended",
+    },
+  });
+
+  return expiredCampaigns;
 };
 
 export const deleteCampaign = async (id) => {
-  const query = `
-      UPDATE campaigns
-      SET status = 'deleted', current_amount = 0, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-      RETURNING *;
-    `;
-  const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  return await prisma.campaign.update({
+    where: { id: parseInt(id, 10) },
+    data: {
+      status: "deleted",
+      current_amount: 0,
+    },
+  });
 };

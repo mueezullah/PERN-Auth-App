@@ -5,6 +5,7 @@ import { useParams, useLocation } from "react-router-dom";
 import { fetchUserProfileStats } from "../../features/profile/profileAPI";
 
 type ProfileStats = {
+  id?: number;
   name?: string;
   username?: string;
   role?: string;
@@ -20,7 +21,7 @@ export function ProfileView() {
   const location = useLocation();
   const stateName = (location.state as { name?: string } | null)?.name;
   const loggedInUsername = localStorage.getItem("username");
-  const isOwnProfile = !!paramUsername && paramUsername === loggedInUsername;
+  const isOwnProfile = !paramUsername || paramUsername === loggedInUsername;
   // When viewing own profile, use localStorage name; for others, use stateName if available, fallback to paramUsername
   const name = isOwnProfile ? (localStorage.getItem("name") || paramUsername) : (stateName || paramUsername);
   const username = paramUsername || loggedInUsername;
@@ -52,7 +53,13 @@ export function ProfileView() {
         />
       </div>
       <div className="hidden xl:block w-75 shrink-0">
-        <ProfileRightSidebar name={profileStats?.name || name} profileStats={profileStats} isOwnProfile={isOwnProfile} />
+        <ProfileRightSidebar
+          name={profileStats?.name || name}
+          username={username ?? undefined}
+          userId={profileStats?.id}
+          profileStats={profileStats}
+          isOwnProfile={isOwnProfile}
+        />
       </div>
     </div>
   );

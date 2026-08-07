@@ -1,3 +1,9 @@
+// 💡 ARCHITECTURE NOTE (DUAL DATABASE ACCESS PATTERN):
+// Standard CRUD models (Users, Posts, Comments, Likes, Follows) use Prisma ORM for type safety.
+// Payments & Critical Financial Transactions explicitly use Raw SQL (`pg` pool, parameterized queries,
+// explicit BEGIN/COMMIT transaction locks) to showcase raw SQL proficiency, low-level transaction control,
+// and performance optimization alongside Prisma.
+
 import pool from "../../config/db.js";
 import Stripe from "stripe"
 import { findById as findCampaignById } from "../campaigns/campaign.model.js";

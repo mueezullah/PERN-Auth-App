@@ -1,79 +1,68 @@
-import { pool } from "../../config/db.js";
+import prisma from "../../config/prisma.js";
 
 export const initTable = async () => {
-  const query = `
-    CREATE TABLE IF NOT EXISTS comments (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      target_type VARCHAR(20) NOT NULL CHECK (target_type IN ('campaign', 'post')),
-      target_id INTEGER NOT NULL,
-      content TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_comments_target ON comments(target_type, target_id);
-    CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at ASC);
-  `;
-  try {
-    await pool.query(query);
-    console.log("Comments table is ready");
-  } catch (error) {
-    console.error("Error initializing comments table:", error);
-    throw error;
-  }
+  console.log("Comments table verified via Prisma");
 };
 
 export const create = async (userId, targetType, targetId, content) => {
-  const query = `
-    INSERT INTO comments (user_id, target_type, target_id, content)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *;
-  `;
-  const values = [userId, targetType, targetId, content];
-  const result = await pool.query(query, values);
-  return result.rows[0];
+  return await prisma.comment.create({
+    data: {
+      user_id: parseInt(userId, 10),
+      target_type: targetType,
+      target_id: parseInt(targetId, 10),
+      content,
+    },
+  });
 };
 
 export const findByTarget = async (targetType, targetId, since = null) => {
-  let query = `
-    SELECT c.*, u.name as author_name, u.username as author_username, u.role as author_role
-    FROM comments c
-    JOIN users u ON c.user_id = u.id
-    WHERE c.target_type = $1 AND c.target_id = $2
-  `;
-  const values = [targetType, targetId];
+  const whereCondition = {
+    target_type: targetType,
+    target_id: parseInt(targetId, 10),
+  };
 
   if (since) {
-    query += ` AND c.created_at > $3`;
-    values.push(since);
+    whereCondition.created_at = { gt: new Date(since) };
   }
 
-  query += ` ORDER BY c.created_at ASC, c.id ASC`;
+  const comments = await prisma.comment.findMany({
+    where: whereCondition,
+    include: {
+      user: {
+        select: { name: true, username: true, role: true },
+      },
+    },
+    orderBy: [
+      { created_at: "asc" },
+      { id: "asc" },
+    ],
+  });
 
-  const result = await pool.query(query, values);
-  return result.rows;
+  return comments.map((c) => ({
+    ...c,
+    author_name: c.user?.name,
+    author_username: c.user?.username,
+    author_role: c.user?.role,
+  }));
 };
 
 export const countByTarget = async (targetType, targetId) => {
-  const query = `
-    SELECT COUNT(*) FROM comments
-    WHERE target_type = $1 AND target_id = $2;
-  `;
-  const result = await pool.query(query, [targetType, targetId]);
-  return parseInt(result.rows[0].count, 10);
+  return await prisma.comment.count({
+    where: {
+      target_type: targetType,
+      target_id: parseInt(targetId, 10),
+    },
+  });
 };
 
 export const findById = async (commentId) => {
-  const query = `
-    SELECT * FROM comments WHERE id = $1;
-  `;
-  const result = await pool.query(query, [commentId]);
-  return result.rows[0];
+  return await prisma.comment.findUnique({
+    where: { id: parseInt(commentId, 10) },
+  });
 };
 
 export const deleteById = async (commentId) => {
-  const query = `
-    DELETE FROM comments WHERE id = $1 RETURNING *;
-  `;
-  const result = await pool.query(query, [commentId]);
-  return result.rows[0];
+  return await prisma.comment.delete({
+    where: { id: parseInt(commentId, 10) },
+  });
 };

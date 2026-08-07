@@ -113,6 +113,9 @@ export function ProfileFeed({
           fetch(
             `${import.meta.env.VITE_BASE_API_URL}/campaigns/user/${nextUserId}?page=1&limit=${CAMPAIGNS_PAGE_SIZE}`,
           ),
+          fetch(
+            `${import.meta.env.VITE_BASE_API_URL}/follows/${nextUserId}/status`,
+          ),
         ]);
 
         const postsData = await postsRes.json();
@@ -195,9 +198,7 @@ export function ProfileFeed({
     postsPagination,
     userId,
     username,
-  ]);
-
-  useEffect(() => {
+  ]);  useEffect(() => {
     return () => {
       observer.current?.disconnect();
     };
@@ -482,6 +483,7 @@ export function ProfileFeed({
   return (
     <div className="w-full max-w-175 mx-auto py-8 flex flex-col">
       <div className="flex items-center space-x-4 mb-6 px-4">
+        {/* Profile Avatar */}
         <div className="relative">
           <button className="hover:ring-2 hover:ring-indigo-500/30 transition-all overflow-hidden rounded-full border border-slate-200 block shrink-0">
             {avatar ? (
