@@ -1,124 +1,177 @@
-import pool from "../../config/db.js";
+import prisma from "../../config/prisma.js";
 
 export const initTable = async () => {
-  const query = `
-    CREATE TABLE IF NOT EXISTS posts (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      content TEXT NOT NULL,
-      media_url VARCHAR(255),
-      status VARCHAR(20) DEFAULT 'active',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    ALTER TABLE posts ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';
-    CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
-    CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
-  `;
-  try {
-    await pool.query(query);
-    console.log("Posts table is ready");
-  } catch (error) {
-    console.error("Error initializing posts table:", error);
-    throw error;
-  }
+  console.log("Posts table verified via Prisma");
 };
 
 export const createPost = async (userId, content, mediaUrl) => {
-  const query = `
-      INSERT INTO posts (user_id, content, media_url)
-      VALUES ($1, $2, $3)
-      RETURNING *;
-    `;
-  const values = [userId, content, mediaUrl];
-  const result = await pool.query(query, values);
-  return result.rows[0];
+  return await prisma.post.create({
+    data: {
+      user_id: parseInt(userId, 10),
+      content,
+      media_url: mediaUrl,
+    },
+  });
 };
 
 export const findAllPosts = async (limit = 10, offset = 0) => {
-  const query = `
-      SELECT p.*, COUNT(*) OVER() as total_count, u.name as author_name, u.username as author_username, u.email as author_email, u.role as author_role,
-      (SELECT COUNT(*) FROM comments WHERE target_type = 'post' AND target_id = p.id) AS comments_count,
-      (SELECT COUNT(*) FROM likes WHERE target_type = 'post' AND target_id = p.id) AS likes_count
-      FROM posts p
-      JOIN users u ON p.user_id = u.id
-      WHERE p.status != 'deleted'
-      ORDER BY p.created_at DESC
-      LIMIT $1 OFFSET $2;
-    `;
-  const result = await pool.query(query, [limit, offset]);
-  const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+  const whereCondition = { status: { not: "deleted" } };
+
+  const [postsList, totalCount] = await Promise.all([
+    prisma.post.findMany({
+      where: whereCondition,
+      include: {
+        user: {
+          select: { name: true, username: true, email: true, role: true },
+        },
+      },
+      orderBy: { created_at: "desc" },
+      take: parseInt(limit, 10),
+      skip: parseInt(offset, 10),
+    }),
+    prisma.post.count({ where: whereCondition }),
+  ]);
+
+  const formattedPosts = await Promise.all(
+    postsList.map(async (p) => {
+      const [commentsCount, likesCount] = await Promise.all([
+        prisma.comment.count({
+          where: { target_type: "post", target_id: p.id },
+        }),
+        prisma.like.count({
+          where: { target_type: "post", target_id: p.id },
+        }),
+      ]);
+
+      return {
+        ...p,
+        author_name: p.user?.name,
+        author_username: p.user?.username,
+        author_email: p.user?.email,
+        author_role: p.user?.role,
+        comments_count: commentsCount,
+        likes_count: likesCount,
+      };
+    })
+  );
 
   return {
-    posts: result.rows,
-    total
+    posts: formattedPosts,
+    total: totalCount,
   };
 };
 
 export const findByUserId = async (userId, limit = 10, offset = 0) => {
-  const query = `
-      SELECT p.*, COUNT(*) OVER() as total_count, u.name as author_name, u.username as author_username, u.email as author_email,
-      (SELECT COUNT(*) FROM comments WHERE target_type = 'post' AND target_id = p.id) AS comments_count,
-      (SELECT COUNT(*) FROM likes WHERE target_type = 'post' AND target_id = p.id) AS likes_count
-      FROM posts p
-      JOIN users u ON p.user_id = u.id
-      WHERE p.user_id = $1 AND p.status != 'deleted'
-      ORDER BY p.created_at DESC
-      LIMIT $2 OFFSET $3;
-    `;
-  const result = await pool.query(query, [userId, limit, offset]);
+  const whereCondition = {
+    user_id: parseInt(userId, 10),
+    status: { not: "deleted" },
+  };
 
-  const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+  const [postsList, totalCount] = await Promise.all([
+    prisma.post.findMany({
+      where: whereCondition,
+      include: {
+        user: {
+          select: { name: true, username: true, email: true },
+        },
+      },
+      orderBy: { created_at: "desc" },
+      take: parseInt(limit, 10),
+      skip: parseInt(offset, 10),
+    }),
+    prisma.post.count({ where: whereCondition }),
+  ]);
+
+  const formattedPosts = await Promise.all(
+    postsList.map(async (p) => {
+      const [commentsCount, likesCount] = await Promise.all([
+        prisma.comment.count({
+          where: { target_type: "post", target_id: p.id },
+        }),
+        prisma.like.count({
+          where: { target_type: "post", target_id: p.id },
+        }),
+      ]);
+
+      return {
+        ...p,
+        author_name: p.user?.name,
+        author_username: p.user?.username,
+        author_email: p.user?.email,
+        comments_count: commentsCount,
+        likes_count: likesCount,
+      };
+    })
+  );
 
   return {
-    posts: result.rows,
-    total
+    posts: formattedPosts,
+    total: totalCount,
   };
 };
 
 export const findById = async (id) => {
-  const query = `
-      SELECT * FROM posts WHERE id = $1;
-    `;
-  const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  return await prisma.post.findUnique({
+    where: { id: parseInt(id, 10) },
+  });
 };
 
 export const deletePost = async (id) => {
-  const query = `
-      UPDATE posts 
-      SET status = 'deleted', updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-      RETURNING *;
-    `;
-  const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  return await prisma.post.update({
+    where: { id: parseInt(id, 10) },
+    data: { status: "deleted" },
+  });
 };
 
 export const updatePost = async (id, userId, content, mediaUrl) => {
-  const query = `
-      UPDATE posts
-      SET content = COALESCE($1, content),
-          media_url = COALESCE($2, media_url),
-          status = 'updated',
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = $3 AND user_id = $4
-      RETURNING *;
-    `;
-  const values = [content, mediaUrl, id, userId];
-  const result = await pool.query(query, values);
-  return result.rows[0] || null;
+  const updateData = { status: "updated" };
+  if (content !== undefined && content !== null) updateData.content = content;
+  if (mediaUrl !== undefined && mediaUrl !== null) updateData.media_url = mediaUrl;
+
+  const updated = await prisma.post.updateMany({
+    where: {
+      id: parseInt(id, 10),
+      user_id: parseInt(userId, 10),
+    },
+    data: updateData,
+  });
+
+  if (updated.count === 0) return null;
+
+  return await findById(id);
 };
 
 export const findPostWithAuthor = async (id) => {
-  const query = `
-    SELECT p.*, u.name as author_name, u.username as author_username, u.email as author_email, u.role as author_role,
-    (SELECT COUNT(*) FROM comments WHERE target_type = 'post' AND target_id = p.id) AS comments_count,
-    (SELECT COUNT(*) FROM likes WHERE target_type = 'post' AND target_id = p.id) AS likes_count
-    FROM posts p
-    JOIN users u ON p.user_id = u.id
-    WHERE p.id = $1 AND p.status != 'deleted';
-  `;
-  const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  const post = await prisma.post.findFirst({
+    where: {
+      id: parseInt(id, 10),
+      status: { not: "deleted" },
+    },
+    include: {
+      user: {
+        select: { name: true, username: true, email: true, role: true },
+      },
+    },
+  });
+
+  if (!post) return null;
+
+  const [commentsCount, likesCount] = await Promise.all([
+    prisma.comment.count({
+      where: { target_type: "post", target_id: post.id },
+    }),
+    prisma.like.count({
+      where: { target_type: "post", target_id: post.id },
+    }),
+  ]);
+
+  return {
+    ...post,
+    author_name: post.user?.name,
+    author_username: post.user?.username,
+    author_email: post.user?.email,
+    author_role: post.user?.role,
+    comments_count: commentsCount,
+    likes_count: likesCount,
+  };
 };

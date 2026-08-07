@@ -1,6 +1,6 @@
-import pool from "../../config/db.js";
+import prisma from "../../config/prisma.js";
 
-// Define the User schema structure (for documentation/validation)
+// User Schema Structure reference
 export const UserSchema = {
   id: "SERIAL PRIMARY KEY",
   name: "VARCHAR(255) NOT NULL",
@@ -12,144 +12,118 @@ export const UserSchema = {
   created_at: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
 };
 
-// Initialize/Create table if it doesn't exist
 export const initializeTable = async () => {
-  const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      username VARCHAR(20) UNIQUE NOT NULL,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      password VARCHAR(255) NOT NULL,
-      role VARCHAR(20) NOT NULL DEFAULT 'user',
-      kyc_verified BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-
-  try {
-    await pool.query(createTableQuery);
-    // Add column if it doesn't exist to support existing databases
-    await pool.query(`
-      ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS kyc_verified BOOLEAN DEFAULT FALSE;
-    `);
-
-    // Check if column username exists.
-    const checkUsernameCol = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'users' AND column_name = 'username';
-    `);
-
-    if (checkUsernameCol.rows.length === 0) {
-      console.log("Adding username column to existing users table...");
-      // Add column as nullable first to prevent NOT NULL constraints violation on existing rows
-      await pool.query(`
-        ALTER TABLE users 
-        ADD COLUMN username VARCHAR(20);
-      `);
-
-      // Populate nullable username with a safe fallback using user id
-      await pool.query(`
-        UPDATE users 
-        SET username = 'user_' || id 
-        WHERE username IS NULL;
-      `);
-
-      // Set it as NOT NULL
-      await pool.query(`
-        ALTER TABLE users 
-        ALTER COLUMN username SET NOT NULL;
-      `);
-
-      // Add unique constraint
-      await pool.query(`
-        ALTER TABLE users 
-        ADD CONSTRAINT users_username_key UNIQUE (username);
-      `);
-    }
-    console.log("Users table is ready");
-  } catch (error) {
-    console.error("Error initializing users table:", error);
-    throw error;
-  }
+  // Database tables managed by Prisma Schema/Migrations
+  console.log("Users table verified via Prisma");
 };
 
-// User Model with all operations
+// User Model operations using Prisma Client
+
 export const create = async (name, username, email, password) => {
-  const query = `
-      INSERT INTO users (name, username, email, password) 
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, name, username, email, role, kyc_verified, created_at;
-    `;
-  const values = [name, username, email, password];
-  const result = await pool.query(query, values); // Removed redundant try/catch blocks
-  return result.rows[0];
+  return await prisma.user.create({
+    data: {
+      name,
+      username,
+      email,
+      password,
+    },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      kyc_verified: true,
+      created_at: true,
+    },
+  });
 };
 
 export const findByUsername = async (username) => {
-  const query = "SELECT * FROM users WHERE username = $1";
-  const result = await pool.query(query, [username]);
-  return result.rows[0] || null;
+  return await prisma.user.findUnique({
+    where: { username },
+  });
 };
 
 export const getPostCountByUserId = async (userId) => {
-  const query = "SELECT COUNT(*) AS count FROM posts WHERE user_id = $1 AND status = 'active'";
-  const result = await pool.query(query, [userId]);
-  return parseInt(result.rows[0].count, 10) || 0;
+  return await prisma.post.count({
+    where: {
+      user_id: parseInt(userId, 10),
+      status: "active",
+    },
+  });
 };
 
 export const getCampaignCountByUserId = async (userId) => {
-  const query = "SELECT COUNT(*) AS count FROM campaigns WHERE user_id = $1";
-  const result = await pool.query(query, [userId]);
-  return parseInt(result.rows[0].count, 10) || 0;
+  return await prisma.campaign.count({
+    where: {
+      user_id: parseInt(userId, 10),
+    },
+  });
 };
 
 export const getBackedProjectsCountByUserId = async (userId) => {
-  const query = `
-    SELECT COUNT(DISTINCT campaign_id) AS count
-    FROM donations
-    WHERE donor_id = $1 AND status = 'completed'
-  `;
-  const result = await pool.query(query, [userId]);
-  return parseInt(result.rows[0].count, 10) || 0;
+  const result = await prisma.donation.groupBy({
+    by: ["campaign_id"],
+    where: {
+      donor_id: parseInt(userId, 10),
+      status: "completed",
+    },
+  });
+  return result.length;
 };
 
 export const getTotalContributedByUserId = async (userId) => {
-  const query = `
-    SELECT COALESCE(SUM(amount), 0) AS total
-    FROM donations
-    WHERE donor_id = $1 AND status = 'completed'
-  `;
-  const result = await pool.query(query, [userId]);
-  return parseFloat(result.rows[0].total) || 0;
+  const aggregate = await prisma.donation.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      donor_id: parseInt(userId, 10),
+      status: "completed",
+    },
+  });
+  return aggregate._sum.amount ? Number(aggregate._sum.amount) : 0;
 };
 
-// READ - Find user by email (for sign-in)
 export const findByEmail = async (email) => {
-  const query = "SELECT * FROM users WHERE email = $1";
-  const result = await pool.query(query, [email]);
-  return result.rows[0] || null;
+  return await prisma.user.findUnique({
+    where: { email },
+  });
 };
 
-// READ - Find user by ID
 export const findById = async (id) => {
-  const query =
-    "SELECT id, name, username, email, role, kyc_verified, created_at FROM users WHERE id = $1"; // Added role back to selection
-  const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  return await prisma.user.findUnique({
+    where: { id: parseInt(id, 10) },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      kyc_verified: true,
+      created_at: true,
+    },
+  });
 };
 
-// READ - Get all users
 export const findAll = async () => {
-  const query =
-    "SELECT id, name, username, email, role, kyc_verified, created_at FROM users ORDER BY created_at DESC";
-  const result = await pool.query(query);
-  return result.rows;
+  return await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      kyc_verified: true,
+      created_at: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
 };
 
-// UPDATE - Update user details dynamically using COALESCE
 export const update = async (
   id,
   {
@@ -160,37 +134,39 @@ export const update = async (
     kyc_verified = null,
   } = {},
 ) => {
-  const query = `
-    UPDATE users 
-    SET name = COALESCE($1, name), 
-        username = COALESCE($2, username),
-        email = COALESCE($3, email),
-        role = COALESCE($4, role),
-        kyc_verified = COALESCE($5, kyc_verified)
-    WHERE id = $6 
-    RETURNING id, name, username, email, role, kyc_verified, created_at;
-  `;
-  const result = await pool.query(query, [
-    name,
-    username,
-    email,
-    role,
-    kyc_verified,
-    id,
-  ]);
-  return result.rows[0] || null;
+  const updateData = {};
+  if (name !== null) updateData.name = name;
+  if (username !== null) updateData.username = username;
+  if (email !== null) updateData.email = email;
+  if (role !== null) updateData.role = role;
+  if (kyc_verified !== null) updateData.kyc_verified = kyc_verified;
+
+  return await prisma.user.update({
+    where: { id: parseInt(id, 10) },
+    data: updateData,
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      kyc_verified: true,
+      created_at: true,
+    },
+  });
 };
 
-// UPDATE - Update password
 export const updatePassword = async (id, newPassword) => {
-  const query = "UPDATE users SET password = $1 WHERE id = $2";
-  await pool.query(query, [newPassword, id]);
+  await prisma.user.update({
+    where: { id: parseInt(id, 10) },
+    data: { password: newPassword },
+  });
   return true;
 };
 
-// DELETE - Delete user (Renamed function to avoid JS reserved keyword collision)
 export const deleteUserRecord = async (id) => {
-  const query = "DELETE FROM users WHERE id = $1 RETURNING id";
-  const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  return await prisma.user.delete({
+    where: { id: parseInt(id, 10) },
+    select: { id: true },
+  });
 };

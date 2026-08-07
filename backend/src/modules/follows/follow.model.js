@@ -1,99 +1,99 @@
-import { pool } from "../../config/db.js";
+import prisma from "../../config/prisma.js";
 
 export const initTable = async () => {
-  const query = `
-    CREATE TABLE IF NOT EXISTS follows (
-      id SERIAL PRIMARY KEY,
-      follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      following_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT unique_follow UNIQUE (follower_id, following_id),
-      CONSTRAINT check_no_self_follow CHECK (follower_id <> following_id)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower_id);
-    CREATE INDEX IF NOT EXISTS idx_follows_following ON follows(following_id);
-  `;
-  try {
-    await pool.query(query);
-    console.log("Follows table initialized successfully");
-  } catch (error) {
-    console.error("Error initializing follows table:", error);
-    throw error;
-  }
+  console.log("Follows table verified via Prisma");
 };
 
-// Toggle follow/unfollow status
 export const toggleFollow = async (followerId, followingId) => {
-  if (followerId === followingId) {
+  const fId = parseInt(followerId, 10);
+  const targetId = parseInt(followingId, 10);
+
+  if (fId === targetId) {
     throw new Error("You cannot follow yourself");
   }
 
-  const existing = await pool.query(
-    `SELECT id FROM follows WHERE follower_id = $1 AND following_id = $2`,
-    [followerId, followingId]
-  );
+  const existing = await prisma.follow.findUnique({
+    where: {
+      follower_id_following_id: {
+        follower_id: fId,
+        following_id: targetId,
+      },
+    },
+  });
 
-  if (existing.rows.length > 0) {
-    await pool.query(`DELETE FROM follows WHERE follower_id = $1 AND following_id = $2`, [followerId, followingId]);
+  if (existing) {
+    await prisma.follow.delete({
+      where: { id: existing.id },
+    });
     return { isFollowing: false };
   } else {
-    await pool.query(
-      `INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)`,
-      [followerId, followingId]
-    );
+    await prisma.follow.create({
+      data: {
+        follower_id: fId,
+        following_id: targetId,
+      },
+    });
     return { isFollowing: true };
   }
 };
 
-// Check if a specific user follows target user
 export const checkIsFollowing = async (followerId, followingId) => {
-  const result = await pool.query(
-    `SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = $2`,
-    [followerId, followingId]
-  );
-  return result.rows.length > 0;
+  const count = await prisma.follow.count({
+    where: {
+      follower_id: parseInt(followerId, 10),
+      following_id: parseInt(followingId, 10),
+    },
+  });
+  return count > 0;
 };
 
-// Get follower count & following count for a user profile
 export const getFollowCounts = async (userId) => {
-  const followerRes = await pool.query(
-    `SELECT COUNT(*) FROM follows WHERE following_id = $1`,
-    [userId]
-  );
-  const followingRes = await pool.query(
-    `SELECT COUNT(*) FROM follows WHERE follower_id = $1`,
-    [userId]
-  );
+  const uId = parseInt(userId, 10);
+  const [followersCount, followingCount] = await Promise.all([
+    prisma.follow.count({ where: { following_id: uId } }),
+    prisma.follow.count({ where: { follower_id: uId } }),
+  ]);
 
   return {
-    followersCount: parseInt(followerRes.rows[0].count, 10),
-    followingCount: parseInt(followingRes.rows[0].count, 10),
+    followersCount,
+    followingCount,
   };
 };
 
-// Get list of users following a user
 export const getFollowers = async (userId) => {
-  const result = await pool.query(
-    `SELECT u.id, u.name, u.email, u.profile_picture, f.created_at
-     FROM follows f
-     JOIN users u ON f.follower_id = u.id
-     WHERE f.following_id = $1
-     ORDER BY f.created_at DESC`,
-    [userId]
-  );
-  return result.rows;
+  const follows = await prisma.follow.findMany({
+    where: { following_id: parseInt(userId, 10) },
+    include: {
+      follower: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+    orderBy: { created_at: "desc" },
+  });
+
+  return follows.map((f) => ({
+    id: f.follower.id,
+    name: f.follower.name,
+    email: f.follower.email,
+    created_at: f.created_at,
+  }));
 };
 
-// Get list of users a user is following
 export const getFollowing = async (userId) => {
-  const result = await pool.query(
-    `SELECT u.id, u.name, u.email, u.profile_picture, f.created_at
-     FROM follows f
-     JOIN users u ON f.following_id = u.id
-     WHERE f.follower_id = $1
-     ORDER BY f.created_at DESC`,
-    [userId]
-  );
-  return result.rows;
+  const follows = await prisma.follow.findMany({
+    where: { follower_id: parseInt(userId, 10) },
+    include: {
+      following: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+    orderBy: { created_at: "desc" },
+  });
+
+  return follows.map((f) => ({
+    id: f.following.id,
+    name: f.following.name,
+    email: f.following.email,
+    created_at: f.created_at,
+  }));
 };
