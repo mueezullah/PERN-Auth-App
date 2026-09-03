@@ -4,7 +4,7 @@ import { ToastContainer } from "react-toastify";
 import { handleError } from "../../utils";
 import { useCreateCampaign } from "../../features/creator/creatorSlice";
 import * as creatorAPI from "../../features/creator/creatorAPI";
-import { X, Megaphone, Image as ImageIcon, CalendarDays, DollarSign, FileText, Pencil, Save } from "lucide-react";
+import { X, Megaphone, Image as ImageIcon, CalendarDays, DollarSign, FileText, Pencil, Save, Upload, Loader2 } from "lucide-react";
 import { showMinimalToast } from "../../components/MinimalToast"
 /**
  * CreateCampaignModal
@@ -28,8 +28,48 @@ const CreateCampaignModal = ({
   const returnTo = location.state?.returnTo || "/feed";
   const { create, loading: createLoading } = useCreateCampaign();
   const [updateLoading, setUpdateLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const loading = editMode ? updateLoading : createLoading;
+
+  const handleImageFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      handleError("Please sign in to upload images.");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("folder", "campaigns");
+
+      const res = await fetch(`${import.meta.env.VITE_BASE_API_URL}/upload/image`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to upload image to AWS S3");
+      }
+
+      setForm((prev) => ({ ...prev, media_url: data.url }));
+      if (errors.media_url) setErrors((prev) => ({ ...prev, media_url: "" }));
+      showMinimalToast("Image Uploaded to S3");
+    } catch (err) {
+      handleError(err.message || "Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const buildInitialForm = () => {
     if (editMode && initialData) {
@@ -249,18 +289,35 @@ const CreateCampaignModal = ({
               </div>
             </div>
 
-            {/* Media URL */}
+            {/* Media URL / S3 Upload */}
             <div>
-              <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                <ImageIcon className="w-4 h-4 mr-2 text-slate-400" />
-                Media URL <span className="text-slate-400 font-normal ml-1">(optional)</span>
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="flex items-center text-sm font-semibold text-slate-700">
+                  <ImageIcon className="w-4 h-4 mr-2 text-slate-400" />
+                  Media Image <span className="text-slate-400 font-normal ml-1">(optional)</span>
+                </label>
+                <label className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-full transition-colors">
+                  {uploadingImage ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5" />
+                  )}
+                  <span>{uploadingImage ? "Uploading to S3..." : "Upload File (AWS S3)"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageFileUpload}
+                    disabled={uploadingImage}
+                  />
+                </label>
+              </div>
               <input
                 type="url"
                 name="media_url"
                 value={form.media_url}
                 onChange={handleChange}
-                placeholder="https://example.com/image.jpg"
+                placeholder="Upload file above or paste image URL..."
                 className={`w-full px-4 py-3 bg-slate-50 rounded-xl border ${errors.media_url ? "border-red-300 focus:border-red-400 focus:ring-red-200" : "border-slate-200 focus:border-indigo-400 focus:ring-indigo-200"} focus:outline-none focus:ring-2 text-[15px] text-slate-900 placeholder-slate-400 transition-all`}
               />
               {errors.media_url && <p className="text-red-500 text-[13px] mt-1.5 font-medium">{errors.media_url}</p>}
@@ -407,19 +464,36 @@ const CreateCampaignModal = ({
                 </div>
               </div>
 
-              {/* Media URL */}
+              {/* Media URL / AWS S3 Upload */}
               <div>
-                <label className="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                  <ImageIcon className="w-4 h-4 mr-2 text-slate-400" />
-                  Media URL
-                  <span className="text-slate-400 font-normal ml-1">(optional)</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center text-sm font-semibold text-slate-700">
+                    <ImageIcon className="w-4 h-4 mr-2 text-slate-400" />
+                    Campaign Image
+                    <span className="text-slate-400 font-normal ml-1">(optional)</span>
+                  </label>
+                  <label className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer flex items-center space-x-1 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-full transition-colors">
+                    {uploadingImage ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5" />
+                    )}
+                    <span>{uploadingImage ? "Uploading ..." : "Upload File"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageFileUpload}
+                      disabled={uploadingImage}
+                    />
+                  </label>
+                </div>
                 <input
                   type="url"
                   name="media_url"
                   value={form.media_url}
                   onChange={handleChange}
-                  placeholder="https://example.com/image.jpg"
+                  placeholder="Upload file above or paste image URL..."
                   className={`w-full px-4 py-3 bg-slate-50 rounded-xl border ${errors.media_url ? "border-red-300 focus:border-red-400 focus:ring-red-200" : "border-slate-200 focus:border-indigo-400 focus:ring-indigo-200"} focus:outline-none focus:ring-2 text-[16px] text-slate-900 placeholder-slate-400 transition-all`}
                 />
                 {errors.media_url && <p className="text-red-500 text-[13px] mt-1.5 font-medium">{errors.media_url}</p>}

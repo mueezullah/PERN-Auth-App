@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, User, Heart, MessageCircle, Share2, Clock } from "lucide-react";
+import { Plus, User, Heart, MessageCircle, Share2, Clock, Camera, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import { formatRelativeTime } from "../../utils";
 import { CreateThreadModal } from "../Feed/components/CreateThreadModal";
@@ -76,9 +76,67 @@ export function ProfileFeed({
     null,
   );
   const [isThreadModalOpen, setIsThreadModalOpen] = useState(false);
-  const displayName = name || username || "User";
-  const avatar = isOwnProfile ? localStorage.getItem("avatar") : null;
+  const [avatarState, setAvatarState] = useState<string | null>(
+    isOwnProfile ? localStorage.getItem("avatar") : null
+  );
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const observer = useRef<IntersectionObserver | null>(null);
+
+  const displayName =
+    name ||
+    (isOwnProfile ? localStorage.getItem("name") : null) ||
+    username ||
+    "User";
+
+  const avatar = isOwnProfile
+    ? avatarState || localStorage.getItem("avatar")
+    : avatarState;
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please sign in to update your avatar.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await fetch(`${import.meta.env.VITE_BASE_API_URL}/users/avatar`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to upload avatar");
+      }
+
+      const newAvatarUrl = data.avatar_url;
+      setAvatarState(newAvatarUrl);
+      if (isOwnProfile) {
+        localStorage.setItem("avatar", newAvatarUrl);
+        window.dispatchEvent(new Event("avatarChange"));
+      }
+    } catch (err: any) {
+      alert(err.message || "Error uploading profile picture to S3");
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
 
   useEffect(() => {
     async function loadProfileContent() {
@@ -105,6 +163,9 @@ export function ProfileFeed({
 
         const nextUserId = profileData.data.id;
         setUserId(nextUserId);
+        if (!isOwnProfile && (profileData.data.avatar_url || profileData.data.avatar)) {
+          setAvatarState(profileData.data.avatar_url || profileData.data.avatar);
+        }
 
         const [postsRes, campaignsRes] = await Promise.all([
           fetch(
@@ -198,7 +259,9 @@ export function ProfileFeed({
     postsPagination,
     userId,
     username,
-  ]);  useEffect(() => {
+  ]);
+
+  useEffect(() => {
     return () => {
       observer.current?.disconnect();
     };
@@ -288,9 +351,9 @@ export function ProfileFeed({
 
   const handleCampaignClick = () => {
     if (role === "admin" || role === "fundraiser") {
-      navigate("/create-campaign", { state: { returnTo: location.pathname } });
+      navigate("/create-campaign", { state: { returnTo: window.location.pathname } });
     } else {
-      navigate(`/kyc-verification`, { state: { returnTo: location.pathname } });
+      navigate(`/kyc-verification`, { state: { returnTo: window.location.pathname } });
     }
   };
 

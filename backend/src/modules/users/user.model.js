@@ -33,6 +33,7 @@ export const create = async (name, username, email, password) => {
       username: true,
       email: true,
       role: true,
+      avatar_url: true,
       kyc_verified: true,
       created_at: true,
     },
@@ -101,6 +102,7 @@ export const findById = async (id) => {
       username: true,
       email: true,
       role: true,
+      avatar_url: true,
       kyc_verified: true,
       created_at: true,
     },
@@ -115,6 +117,7 @@ export const findAll = async () => {
       username: true,
       email: true,
       role: true,
+      avatar_url: true,
       kyc_verified: true,
       created_at: true,
     },
@@ -131,6 +134,7 @@ export const update = async (
     username = null,
     email = null,
     role = null,
+    avatar_url = null,
     kyc_verified = null,
   } = {},
 ) => {
@@ -139,6 +143,7 @@ export const update = async (
   if (username !== null) updateData.username = username;
   if (email !== null) updateData.email = email;
   if (role !== null) updateData.role = role;
+  if (avatar_url !== null) updateData.avatar_url = avatar_url;
   if (kyc_verified !== null) updateData.kyc_verified = kyc_verified;
 
   return await prisma.user.update({
@@ -150,6 +155,7 @@ export const update = async (
       username: true,
       email: true,
       role: true,
+      avatar_url: true,
       kyc_verified: true,
       created_at: true,
     },

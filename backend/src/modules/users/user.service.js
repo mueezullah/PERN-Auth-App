@@ -19,6 +19,7 @@ export const getUserProfileStats = async (username) => {
     name: user.name,
     username: user.username,
     role: user.role,
+    avatarUrl: user.avatar_url,
     createdAt: user.created_at,
     posts,
     campaigns,
@@ -26,3 +27,9 @@ export const getUserProfileStats = async (username) => {
     totalContributed,
   };
 };
+
+export const updateUserAvatar = async (userId, avatarUrl) => {
+  const updatedUser = await UserModel.update(userId, { avatar_url: avatarUrl });
+  return updatedUser;
+};
+
