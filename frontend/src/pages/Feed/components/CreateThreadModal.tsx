@@ -119,12 +119,38 @@ export function CreateThreadModal({
     setSubmitError(null);
 
     try {
+      setIsSubmitting(true);
+      let finalMediaUrl = mediaPreview || "";
+
+      if (mediaFile) {
+        const formData = new FormData();
+        formData.append("image", mediaFile);
+        formData.append("folder", "posts");
+        const token = localStorage.getItem("token");
+
+        const uploadRes = await fetch(
+          `${import.meta.env.VITE_BASE_API_URL}/upload/image`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        );
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success) {
+          throw new Error(uploadData.message || "Failed to upload image to S3");
+        }
+        finalMediaUrl = uploadData.url;
+      }
+
       if (editMode && editPostId) {
         // --- EDIT mode: PUT ---
-        setIsSubmitting(true);
         const updatedPost = await postsAPI.updatePost(editPostId, {
           content: message,
-          mediaUrl: mediaPreview || "",
+          mediaUrl: finalMediaUrl,
         });
         showMinimalToast("Post Updated Successfully");
         if (onSuccess) onSuccess(updatedPost);
@@ -133,7 +159,7 @@ export function CreateThreadModal({
         // --- CREATE mode: POST ---
         const newPost = await create({
           content: message,
-          mediaUrl: "",
+          mediaUrl: finalMediaUrl,
         });
         showMinimalToast("Post Created");
         setMessage("");
