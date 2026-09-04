@@ -203,7 +203,7 @@ export function ProfileFeed({
     }
 
     loadProfileContent();
-  }, [username]);
+  }, [username, isOwnProfile]);
 
   const loadMoreItems = useCallback(async () => {
     if (loadingMore || !userId || !username) {
@@ -547,9 +547,16 @@ export function ProfileFeed({
     <div className="w-full max-w-175 mx-auto py-8 flex flex-col">
       <div className="flex items-center space-x-4 mb-6 px-4">
         {/* Profile Avatar */}
-        <div className="relative">
-          <button className="hover:ring-2 hover:ring-indigo-500/30 transition-all overflow-hidden rounded-full border border-slate-200 block shrink-0">
-            {avatar ? (
+        <div className="relative group">
+          <button
+            onClick={() => isOwnProfile && fileInputRef.current?.click()}
+            className="hover:ring-2 hover:ring-indigo-500/30 transition-all overflow-hidden rounded-full border border-slate-200 block shrink-0"
+          >
+            {uploadingAvatar ? (
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 sm:h-16 sm:w-16 md:h-20 md:w-20">
+                <Loader2 className="h-6 w-6 text-slate-500 animate-spin" />
+              </div>
+            ) : avatar ? (
               <img
                 src={avatar}
                 alt={displayName || "Profile"}
@@ -561,6 +568,22 @@ export function ProfileFeed({
               </div>
             )}
           </button>
+          {isOwnProfile && !uploadingAvatar && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              aria-label="Change profile picture"
+            >
+              <Camera className="h-3 w-3 text-slate-600" />
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarFileChange}
+          />
         </div>
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 leading-tight">
